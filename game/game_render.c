@@ -1,5 +1,5 @@
-#include "board_config.h"
-#include "display.h"
+#include "../config/board_config.h"
+#include "../drivers/display.h"
 #include "snake_game.h"
 #include "game_render.h"
 
@@ -15,7 +15,7 @@ void game_render(void)
         point=snake_segment(i);
         display_fill_rect((unsigned char)(point.x*CELL_SIZE),
                           (unsigned char)(point.y*CELL_SIZE),
-                          CELL_SIZE,CELL_SIZE);
+                          CELL_SIZE-1,CELL_SIZE-1);
     }
     if (snake_state()==SNAKE_PAUSED) display_text(0,0,paused_text);
     else if (snake_state()==SNAKE_STOPPED) display_text(0,0,stopped_text);

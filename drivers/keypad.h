@@ -13,5 +13,6 @@ typedef enum {
 void keypad_init(void);
 void keypad_update(unsigned long now_ms);
 KeyEvent keypad_get_event(void);
+unsigned char keypad_get_press(unsigned char *row, unsigned char *col);
 
 #endif

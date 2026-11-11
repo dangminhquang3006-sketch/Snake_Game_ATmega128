@@ -1,7 +1,7 @@
 #ifndef SNAKE_GAME_H
 #define SNAKE_GAME_H
 
-#include "keypad.h"
+#include "../drivers/keypad.h"
 
 #define SNAKE_LENGTH 3
 

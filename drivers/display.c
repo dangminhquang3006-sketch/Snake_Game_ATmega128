@@ -1,7 +1,7 @@
 #include <mega128.h>
 #include <glcd.h>
 #include <font5x7.h>
-#include "board_config.h"
+#include "../config/board_config.h"
 #include "display.h"
 
 unsigned char display_init(void)
@@ -30,6 +30,11 @@ void display_clear(void)
 void display_text(unsigned char x, unsigned char y, flash char *text)
 {
     glcd_outtextxyf(x,y,text);
+}
+
+void display_text_ram(unsigned char x, unsigned char y, char *text)
+{
+    glcd_outtextxy(x,y,text);
 }
 
 void display_rect(unsigned char x, unsigned char y,

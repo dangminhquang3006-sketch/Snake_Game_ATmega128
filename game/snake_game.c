@@ -1,5 +1,6 @@
-#include "board_config.h"
+#include "../config/board_config.h"
 #include "snake_game.h"
+#include "../drivers/keypad.h"
 
 typedef enum { DIR_UP=0, DIR_RIGHT, DIR_DOWN, DIR_LEFT } SnakeDirection;
 
