@@ -1,5 +1,5 @@
 #include <mega128.h>
-#include "../config/board_config.h"
+#include "config/board_config.h"
 #include "drivers/display.h"
 #include "drivers/timer.h"
 #include "drivers/keypad.h"
