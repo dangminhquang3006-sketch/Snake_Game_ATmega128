@@ -15,4 +15,26 @@
 /* Initial PCD8544 VLCD setting; adjust after a hardware display test. */
 #define NOKIA_CONTRAST 0x40
 
+/* Keypad net labels in docs/so_do_chan.jpeg. Physical key numbers pending test. */
+#define KEY_ROW1_DDR DDRC.6
+#define KEY_ROW1_PORT PORTC.6
+#define KEY_ROW2_DDR DDRE.1
+#define KEY_ROW2_PORT PORTE.1
+#define KEY_ROW3_DDR DDRD.0
+#define KEY_ROW3_PORT PORTD.0
+#define KEY_COL1_DDR DDRC.3
+#define KEY_COL1_PORT PORTC.3
+#define KEY_COL1_PIN PINC.3
+#define KEY_COL2_DDR DDRC.4
+#define KEY_COL2_PORT PORTC.4
+#define KEY_COL2_PIN PINC.4
+#define KEY_COL3_DDR DDRE.0
+#define KEY_COL3_PORT PORTE.0
+#define KEY_COL3_PIN PINE.0
+
+#define GRID_COLS 14
+#define GRID_ROWS 8
+#define CELL_SIZE 6
+#define SNAKE_MOVE_MS 500UL
+
 #endif
