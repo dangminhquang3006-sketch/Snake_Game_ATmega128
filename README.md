@@ -1,78 +1,59 @@
-# Snake Game ATmega128 — giai đoạn 1
+# Snake Game ATmega128 — refactor hiển thị giai đoạn đầu
 
-Firmware Embedded C cho CodeVisionAVR. Giai đoạn này chỉ kiểm tra Nokia 5110; các driver game, keypad, Timer1, LED 7 đoạn, LCD 16×2 và EEPROM chưa được triển khai.
+Firmware Embedded C cho CodeVisionAVR. Hiện chỉ có chương trình kiểm tra Nokia 5110; chưa có game, ALCD, keypad, LED 7 đoạn, Timer1 hoặc EEPROM.
 
-## Tài liệu đã xem
+## Tài liệu và phạm vi xác minh
 
-- `docs/so_do_chan.jpeg`: sơ đồ chân ATmega128 in trên tài liệu board. Có thể đọc tên net và chân.
-- `docs/mach_mo_phong.png`: ảnh chụp schematic Proteus ở mức tổng thể. Xác nhận bố trí và nhãn Nokia; ảnh không đủ nét để kiểm tra mọi dây, cực tính LED hoặc cấu hình clock.
-- `docs/mach_that.jpeg`: ảnh board trong tài liệu, không cho biết chi tiết điện của từng net.
-- `docs/Mo_ta_de_tai_Snake_Game_ATmega128.docx`: đã trích và đọc nội dung Word; tài liệu nêu chức năng, không cung cấp GPIO chi tiết.
+Đã đọc `docs/Kien_truc_va_tinh_nang_Snake_Game_ATmega128_cap_nhat_thu_vien.docx` và xem `so_do_chan.jpeg`, `mach_mo_phong.png`, `mach_that.jpeg`. Không có file Proteus gốc/netlist trong workspace. DOCX cũ `Mo_ta_de_tai_Snake_Game_ATmega128.docx` đã bị xóa trong working tree trước lần refactor này; thay đổi đó được giữ nguyên.
 
-Không có file project Proteus có thể mở và kiểm tra netlist trực tiếp. `VERIFIED` bên dưới nghĩa là đọc được từ sơ đồ chân/nhãn trong ảnh cung cấp, **chưa phải** đã đo hoặc chạy mô phỏng.
+Đã đối chiếu [hướng dẫn CodeVisionAVR V3.20 do HP InfoTech viết](https://www.thierry-lequeu.fr/data/CodeVisionAVR-3-20-User-Manual.pdf) và [trang sản phẩm của nhà phân phối chính thức](https://www.codevision.be/). Tài liệu xác nhận `glcd.h` hỗ trợ PCD8544, `font5x7.h`, `glcd_init`, `glcd_clear`, `glcd_outtextxyf`, `glcd_rectangle`, `glcd_bar`, `glcd_putpixel`; từng tín hiệu GLCD có thể gán vào bit I/O riêng trong cấu hình project. `alcd.h` hỗ trợ LCD ký tự 2×16 và cấu hình tín hiệu riêng trong IDE. **Chưa kiểm tra header hoặc phiên bản CVAVR cài trên máy Windows của người dùng.** Cần đối chiếu trực tiếp trên máy đó trước khi coi project đã build được.
 
-## GPIO mapping
+## Mapping từ ảnh sơ đồ chân
 
-| Ngoại vi | Tín hiệu | GPIO | Trạng thái | Bằng chứng/ghi chú |
-|---|---|---|---|---|
-| Nokia 5110 | DC | PC0 | VERIFIED | `so_do_chan.jpeg`, pin 33 |
-| Nokia 5110 | DIN | PG1 | VERIFIED | pin 34 |
-| Nokia 5110 | CLK | PG2 | VERIFIED | pin 43 |
-| Nokia 5110 | RST | PG3 | VERIFIED | pin 18; **khác bảng dự kiến của đề bài** |
-| Nokia 5110 | CE/CS | PG4 | VERIFIED | pin 19; **khác bảng dự kiến của đề bài** |
-| Nokia 5110 | BL | PD7 | VERIFIED | pin 32; net chung LCD-BL |
-| Keypad 3×3 | ROW-1 | PC5 | VERIFIED | pin 40 |
-| Keypad 3×3 | ROW-2 | PE1 | VERIFIED | pin 3; net chung BLUE-RX |
-| Keypad 3×3 | ROW-3 | PD0 | VERIFIED | pin 25; net chung ENC-R |
-| Keypad 3×3 | COL-1 | PC3 | VERIFIED | pin 38 |
-| Keypad 3×3 | COL-2 | PC4 | VERIFIED | pin 39 |
-| Keypad 3×3 | COL-3 | PE0 | VERIFIED | pin 2; net chung BLUE-TX |
-| LED 7 đoạn CA | A | PF1 | VERIFIED | pin 60 |
-| LED 7 đoạn CA | B | PF5 | VERIFIED | pin 56 |
-| LED 7 đoạn CA | C | PA7 | VERIFIED | pin 44; net `7SLED-C` |
-| LED 7 đoạn CA | D | PD1 | VERIFIED | pin 26 |
-| LED 7 đoạn CA | E | PD2 | VERIFIED | pin 27 |
-| LED 7 đoạn CA | F | PF2 | VERIFIED | pin 59 |
-| LED 7 đoạn CA | G | PD3 | VERIFIED | pin 28 |
-| LED 7 đoạn CA | DP | PF7 | VERIFIED | pin 54 |
-| LED 7 đoạn CA | digit 1 | PF0 | VERIFIED | pin 61 |
-| LED 7 đoạn CA | digit 2 | PF3 | VERIFIED | pin 58 |
-| LED 7 đoạn CA | digit 3 | PF4 | VERIFIED | pin 57 |
-| LED 7 đoạn CA | digit 4 | PF6 | VERIFIED | pin 55 |
-| LED 7 đoạn CA | cực tính/chọn digit | — | UNVERIFIED | Cần mở project Proteus và đối chiếu loại CA, điện trở, mạch kích. |
-| LCD 16×2 | RS | PA0 | VERIFIED | pin 51 |
-| LCD 16×2 | RW | PA1 | VERIFIED | pin 50 |
-| LCD 16×2 | E | PA2 | VERIFIED | pin 49 |
-| LCD 16×2 | D4–D7 | PA3–PA6 | VERIFIED | pin 48–45 |
-| LCD 16×2 | BL | PD7 | VERIFIED | pin 32; dùng chung Nokia-BL |
-| LCD 16×2 | điện áp/contrast | — | UNVERIFIED | Ảnh schematic tổng thể chưa đủ để xác minh hoàn toàn. |
+`VERIFIED` nghĩa là đọc được chân/nét nối từ ảnh; chưa xác nhận bằng netlist hoặc chạy board.
 
-Các net chung có thể ảnh hưởng giai đoạn sau: PD7 điều khiển cả hai backlight; PA7 là `7SLED-C` trong khi LCD dùng PA0–PA6; PE0/PE1 dùng chung nhãn Bluetooth; PD0 dùng chung encoder. Trước khi kích hoạt các ngoại vi này phải kiểm tra mạch thật và netlist. Tần số CPU 16 MHz, mức nguồn Nokia, cực tính BL, thứ tự phím, và cài đặt fuse/clock vẫn **UNVERIFIED**. Chỉ Nokia GPIO đã được đưa vào mã nguồn.
+| Ngoại vi | Tín hiệu | ATmega128 | Trạng thái |
+|---|---|---|---|
+| Nokia 5110 | DC | **PG0** | VERIFIED |
+| Nokia 5110 | DIN | PG1 | VERIFIED |
+| Nokia 5110 | CLK | PG2 | VERIFIED |
+| Nokia 5110 | RST | PG3 | VERIFIED |
+| Nokia 5110 | CE/CS | PG4 | VERIFIED |
+| Nokia 5110 | BL | PD7 | VERIFIED; chung LCD-BL |
+| LCD 16×2 | RS/RW/E | PA0/PA1/PA2 | VERIFIED |
+| LCD 16×2 | D4/D5/D6/D7 | PA3/PA4/PA5/PA6 | VERIFIED |
+| Keypad | ROW-1/2/3 | PC5/PE1/PD0 | VERIFIED cho net; thứ tự phím UNVERIFIED |
+| Keypad | COL-1/2/3 | PC3/PC4/PE0 | VERIFIED cho net; thứ tự phím UNVERIFIED |
+| LED CA | A/B/C/D/E/F/G/DP | PF1/PF5/PA7/PD1/PD2/PF2/PD3/PF7 | VERIFIED cho net; cực tính UNVERIFIED |
+| LED CA | digit 1/2/3/4 | PF0/PF3/PF4/PF6 | VERIFIED cho net; cực tính UNVERIFIED |
 
-## File nguồn
+PG0 là chân vật lý **33** trên ảnh. Mapping PC0 trong phiên bản `board_config.h` cũ là lỗi đã sửa. PD7 chung hai đèn nền; PE0/PE1 chung nhãn Bluetooth; PD0 chung encoder. Clock 16 MHz, điện áp Nokia và mức kích hoạt BL vẫn cần xác minh trên schematic/board. Chưa cấu hình các ngoại vi ngoài Nokia.
 
-- `main.c`: mẫu kiểm tra tĩnh, hiện `SNAKE GAME`, ba ô rắn và một ô thức ăn.
-- `config/board_config.h`: kích thước LCD, GPIO Nokia và giá trị contrast ban đầu.
-- `drivers/nokia5110.h`, `drivers/nokia5110.c`: software SPI, reset/khởi tạo PCD8544, framebuffer 504 byte, pixel, hình chữ nhật, chữ hoa A–Z/dấu cách và cập nhật toàn màn hình. Chưa hỗ trợ font đầy đủ.
+## Cấu trúc nguồn
 
-Driver chỉ dùng vòng đợi ngắn trong **khởi tạo reset**, không dùng delay để điều khiển game. `NOKIA_CONTRAST` là giá trị khởi đầu, có thể cần chỉnh theo LCD thực. BL được đặt mức cao theo giả định kích hoạt mức cao; cực tính chưa xác minh, nên nếu thiếu đèn nền hãy kiểm tra schematic trước khi đổi mức.
+- `main.c`: mẫu hiển thị tĩnh `SNAKE GAME`, ba ô thân rắn và một ô thức ăn.
+- `config/board_config.h`: kích thước GLCD, giá trị contrast khởi đầu, chân backlight; ghi rõ pin mapping GLCD phải thiết lập trong project CVAVR.
+- `drivers/display.c`, `drivers/display.h`: adapter mỏng dùng GLCD của CVAVR, không tạo framebuffer riêng. API `display_init()` trả 0 nếu GLCD khởi tạo thất bại.
+- `game/`: để dành cho logic và render ở giai đoạn sau.
 
-## Tạo và build bằng CodeVisionAVR trên Windows 11
+Driver Nokia software SPI cũ đã bị loại khỏi source; **không thêm `nokia5110.c` vào project**. `display.c` hiện chỉ bọc GLCD. ALCD sẽ được thêm vào cùng module khi bắt đầu kiểm thử LCD 16×2.
 
-1. Chia sẻ/copy nguyên thư mục project sang Windows. Trong CodeVisionAVR, chọn **File → New → Project**. Có thể dùng Project Wizard để tạo project trống; không để wizard tạo mã thay thế `main.c`.
-2. Trong cấu hình project chọn **ATmega128**, đặt **Clock** đúng tần số đang cấu hình trong thuộc tính ATmega128 của Proteus và board thực. 16 MHz chỉ là giá trị dự kiến; kiểm tra crystal/fuse trước. Không bật clock divide nếu không tương ứng phần cứng.
-3. Trong danh sách **Source Files**, thêm `main.c` và `drivers/nokia5110.c`. Không thêm header như source cần biên dịch.
-4. Thêm `config` và `drivers` vào **Include Directories** của C Compiler. Nếu phiên bản CVAVR dùng đường dẫn tương đối theo thư mục project, dùng `config` và `drivers`; nếu project đặt nơi khác, dùng đường dẫn tuyệt đối tới các thư mục này.
-5. Chọn định dạng output **Intel HEX**, tối ưu mặc định hoặc mức tối ưu thông thường; giữ chip target ATmega128. Đảm bảo `<mega128.h>` từ thư viện CodeVisionAVR được tìm thấy. Không dùng compiler AVR-GCC.
-6. Chạy **Project → Build All** (tên menu có thể khác theo phiên bản). Xem cửa sổ thông báo để xử lý lỗi/cảnh báo. Tìm `.hex` tại đường dẫn output hiển thị trong cửa sổ build hoặc Project settings, thường dưới thư mục output của project. Không đoán tên file hay coi build thành công trước khi thấy thông báo của CVAVR.
+## Cấu hình CodeVisionAVR trên Windows 11
 
-## Kiểm tra Proteus
+1. Clone/pull source trên Windows; mở CodeVisionAVR, tạo project mới, chọn **ATmega128**. Không dùng AVR-GCC/Arduino. Chọn CPU clock đúng với thuộc tính ATmega128 trong Proteus và oscillator/fuse của board. 16 MHz chỉ là dự kiến.
+2. Thêm **`main.c` và `drivers/display.c`** vào Source Files. Thêm `config/` và `drivers/` vào C Compiler include paths. Chọn output Intel HEX.
+3. Mở **Project → Configure → C Compiler → Libraries → Graphic Display**. Chọn **PCD8544, 84×48**, bật hỗ trợ GLCD nếu có ô chọn. Trong Connections, gán `D/C=PG0`, `DIN/DATA=PG1`, `CLK=PG2`, `RST=PG3`, `CE/CS=PG4`. Tên từng tín hiệu có thể khác giữa các phiên bản; đối chiếu vai trò điện trước khi lưu. Backlight `PD7` do `display.c` điều khiển, không đưa vào năm tín hiệu giao tiếp GLCD.
+4. Kiểm tra `glcd.h`, `font5x7.h` và cấu trúc `GLCDINIT_t` trong thư mục `INC` của đúng bản CVAVR. Mã này dùng các trường `font`, `readxmem`, `writexmem`, `temp_coef`, `bias`, `vlcd` theo manual V3.20. Nếu phiên bản cài đặt khác, đối chiếu header cùng example PCD8544 đi kèm trước khi sửa mã; không đoán API.
+5. Chạy **Project → Build All**. Chỉ sau khi báo build thành công, lấy đường dẫn `.hex` trong cửa sổ build hoặc project settings. Chưa có `.prj` tự tạo trong repo.
 
-1. Mở schematic gốc trong Proteus 8, phóng lớn và xác nhận trực tiếp Nokia `DC=PC0`, `DIN=PG1`, `CLK=PG2`, `RST=PG3`, `CE=PG4`, `BL=PD7`. Đặc biệt kiểm tra sự khác biệt RST/CE so với bảng dự kiến.
-2. Mở thuộc tính ATmega128, gán **Program File** tới `.hex` vừa build; đặt **Clock Frequency** khớp project CVAVR và mạch thực.
-3. Chạy mô phỏng. Mong đợi dòng `SNAKE GAME` ở phía trên, ba ô vuông liền nhau ở giữa và một ô nhỏ bên phải.
-4. Nếu màn hình trống: kiểm tra nguồn/GND và điện áp phù hợp PCD8544; xem RST lên mức cao sau reset, CE xuống thấp trong lúc truyền, DIN và CLK có xung, DC thấp cho lệnh/cao cho dữ liệu. Kiểm tra thứ tự lệnh `0x21 → Vop → 0x04 → 0x14 → 0x20 → 0x0C`, thử chỉnh `NOKIA_CONTRAST` trong giới hạn phù hợp phần cứng rồi build lại. Nếu cạnh CLK quá nhanh trên board thật, thêm vài lệnh `nop` theo cú pháp CVAVR đã xác minh hoặc đo bằng logic analyzer trước khi sửa. Kiểm tra riêng BL; màn hình có thể có hình dù đèn nền tắt.
+Khi triển khai LCD 16×2 ở giai đoạn khác: dùng `alcd.h`, vào **Libraries → Alphanumeric LCD**, chọn 16 ký tự/dòng, giao tiếp 4-bit và gán `RS=PA0`, `RW=PA1`, `E=PA2`, `D4=PA3`, `D5=PA4`, `D6=PA5`, `D7=PA6`. Chưa bật hoặc gọi ALCD trong bài kiểm tra hiện tại.
 
-## Trạng thái xác minh
+## Proteus và chẩn đoán
 
-Đã đọc các tài liệu hiện có và kiểm tra mã nguồn về cấu trúc, include, mapping và giới hạn framebuffer. Chưa có CodeVisionAVR hay Proteus trong môi trường Ubuntu hiện tại, do đó **chưa biên dịch, chưa tạo HEX, chưa mô phỏng và chưa thử trên board**. Người dùng cần thực hiện build/mô phỏng theo các bước trên và cung cấp log hoặc ảnh nếu gặp lỗi. Giai đoạn tiếp theo: xác minh keypad 3×3 trên schematic/board, rồi triển khai quét phím và Timer1.
+Mở schematic gốc, xác nhận trực tiếp net `NOKIA-DC` tại PG0/pin 33 và bốn chân PG1–PG4. Trong thuộc tính ATmega128, chọn **Program File** là HEX vừa build và đặt **Clock Frequency** khớp cấu hình CVAVR. Chạy mô phỏng: kỳ vọng chữ `SNAKE GAME` ở trên, ba ô lớn liên tiếp và một ô nhỏ bên phải.
+
+Nếu màn hình trống, kiểm tra nguồn/GND, mức điện áp PCD8544, RST, CE, DIN, CLK, D/C bằng probe/logic analyzer; kiểm tra cấu hình GLCD của project và `vlcd` contrast. Nếu có hình nhưng thiếu đèn nền, kiểm tra cực tính BL và đường PD7 chung trước khi đổi mức xuất. Kiểm tra cả thông báo lỗi hoặc giới hạn license GLCD trong bản CVAVR đang dùng.
+
+## Trạng thái và bước sau
+
+Đã đọc tài liệu, kiểm tra source và cấu hình pin, đối chiếu API trên manual của HP InfoTech. **Chưa biên dịch CVAVR, chưa tạo HEX, chưa chạy Proteus hoặc board thực.** Sau bài kiểm tra Nokia: kiểm tra LCD 16×2 qua ALCD; xác minh thứ tự phím và cực tính LED CA từ Proteus/board; sau đó mới triển khai keypad, LED multiplex và Timer1.
