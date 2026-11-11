@@ -7,7 +7,8 @@ typedef enum {
     KEY_DOWN,
     KEY_LEFT,
     KEY_RIGHT,
-    KEY_PAUSE
+    KEY_PAUSE,
+    KEY_RESTART
 } KeyEvent;
 
 void keypad_init(void);

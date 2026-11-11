@@ -72,10 +72,12 @@ void main(void)
         key=keypad_get_event();
         if (key!=KEY_NONE) {
             before=snake_state();
+            snake_mix_entropy(now_ms);
             snake_handle_key(key);
-            if (before!=snake_state()) {
+            if (key==KEY_RESTART || before!=snake_state()) {
                 redraw=1;
-                if (snake_state()==SNAKE_RUNNING) last_move_ms=now_ms;
+                if (key==KEY_RESTART || snake_state()==SNAKE_RUNNING)
+                    last_move_ms=now_ms;
             }
         }
         if (snake_state()==SNAKE_RUNNING &&

@@ -1,83 +1,48 @@
-# Snake Game ATmega128 — giai đoạn 2: kiểm thử chuyển động
+# Snake Game ATmega128 — giai đoạn 3
 
-Firmware Embedded C cho CodeVisionAVR. Giai đoạn này kiểm tra rắn dài ba đốt tự chạy trên Nokia, đổi hướng bằng keypad và Pause/Resume. Chưa có thức ăn, điểm số, LED 7 đoạn, LCD 16×2, EEPROM hoặc menu.
+Firmware Embedded C cho **CodeVisionAVR**. Giai đoạn này có rắn tự di chuyển, bàn phím, thức ăn, tăng chiều dài, điểm số trong logic, Pause/Resume, Game Over, Win và Restart. Chưa điều khiển LED 7 đoạn, LCD 16×2, EEPROM hoặc menu cấp độ.
 
-## Tài liệu và phạm vi xác minh
+## Phần cứng và source
 
-Đã đọc `docs/Kien_truc_va_tinh_nang_Snake_Game_ATmega128_cap_nhat_thu_vien.docx` và xem `so_do_chan.jpeg`, `so_do_chan_ban_phim.jpeg`, `mach_mo_phong.png`, `mach_that.jpeg`. Không có file Proteus gốc/netlist trong workspace. Ảnh bàn phím mới là nguồn mapping dùng cho bản debug này.
+Giữ nguyên cấu hình Nokia PCD8544 đã kiểm thử: `glcd.h`, `font5x7`, 84×48 pixel; DC=PG0, DIN=PG1, CLK=PG2, RST=PG3, CS=PG4, BL=PD7. Keypad theo ảnh `docs/so_do_chan_ban_phim.jpeg`: ROW-1=PC6/41, ROW-2=PE1/3, ROW-3=PD0/25; COL-1=PC4/39, COL-2=PC5/40, COL-3=PE0/2. Ba cột là OUTPUT; ba hàng là INPUT có pull-up nội. Driver quét từng cột LOW, chống dội 20 ms và phát một sự kiện nhấn mới. Ảnh schematic tổng thể cũ ghi COL-1/COL-2 khác ảnh bàn phím; kết quả kiểm thử keypad trên Proteus theo thông tin người dùng là nguồn xác nhận cho mapping hiện tại. Không thay đổi chân trong giai đoạn này.
 
-Đã đối chiếu [hướng dẫn CodeVisionAVR V3.20 do HP InfoTech viết](https://www.thierry-lequeu.fr/data/CodeVisionAVR-3-20-User-Manual.pdf) và [trang sản phẩm của nhà phân phối chính thức](https://www.codevision.be/). Tài liệu xác nhận `glcd.h` hỗ trợ PCD8544, `font5x7.h`, `glcd_init`, `glcd_clear`, `glcd_outtextxyf`, `glcd_rectangle`, `glcd_bar`, `glcd_putpixel`; từng tín hiệu GLCD có thể gán vào bit I/O riêng trong cấu hình project. `alcd.h` hỗ trợ LCD ký tự 2×16 và cấu hình tín hiệu riêng trong IDE. **Chưa kiểm tra header hoặc phiên bản CVAVR cài trên máy Windows của người dùng.** Cần đối chiếu trực tiếp trên máy đó trước khi coi project đã build được.
+| File | Trách nhiệm |
+|---|---|
+| `main.c` | Khởi tạo, đọc phím, lập lịch bước 500 ms, vẽ khi trạng thái thay đổi |
+| `config/board_config.h` | Chân GPIO và kích thước 14×8, bước lưới 6 pixel |
+| `drivers/display.c/.h` | Bao bọc GLCD và font hiện có; không có framebuffer thứ hai |
+| `drivers/keypad.c/.h` | Quét phím; thêm `KEY_RESTART` cho phím 9 |
+| `drivers/timer.c/.h` | Timer1 CTC, tick 1 ms và đọc thời gian nguyên tử; không thay đổi |
+| `game/snake_game.c/.h` | Toàn bộ dữ liệu và quy tắc trò chơi, độc lập GLCD/GPIO |
+| `game/game_render.c/.h` | Vẽ rắn, thức ăn, Pause, Game Over, Win và điểm cuối |
 
-## Mapping từ ảnh sơ đồ chân
+## Logic trò chơi
 
-`VERIFIED` nghĩa là đọc được chân/nét nối từ ảnh; chưa xác nhận bằng netlist hoặc chạy board.
+Lưới có **14×8 = 112 ô**. `SnakePoint` gồm hai tọa độ 8-bit. Mảng tĩnh chứa tối đa 112 đốt (224 byte tọa độ), biến chiều dài chỉ ra phần đang dùng. Rắn bắt đầu với ba đốt ở (7,4), (6,4), (5,4), hướng RIGHT và điểm 0. Mỗi đốt được tô 5×5 pixel trên bước 6 pixel; thức ăn là ô 3×3 pixel đặt lệch (1,1) trong ô logic.
 
-| Ngoại vi | Tín hiệu | ATmega128 | Trạng thái |
-|---|---|---|---|
-| Nokia 5110 | DC | **PG0** | VERIFIED |
-| Nokia 5110 | DIN | PG1 | VERIFIED |
-| Nokia 5110 | CLK | PG2 | VERIFIED |
-| Nokia 5110 | RST | PG3 | VERIFIED |
-| Nokia 5110 | CE/CS | PG4 | VERIFIED |
-| Nokia 5110 | BL | PD7 | VERIFIED; chung LCD-BL |
-| LCD 16×2 | RS/RW/E | PA0/PA1/PA2 | VERIFIED |
-| LCD 16×2 | D4/D5/D6/D7 | PA3/PA4/PA5/PA6 | VERIFIED |
-| Keypad | ROW-1/2/3 | PC6/PE1/PD0 | VERIFIED từ ảnh mới; pin 41/3/25 |
-| Keypad | COL-1/2/3 | PC4/PC5/PE0 | VERIFIED từ ảnh mới; pin 39/40/2 |
-| LED CA | A/B/C/D/E/F/G/DP | PF1/PF5/PA7/PD1/PD2/PF2/PD3/PF7 | VERIFIED cho net; cực tính UNVERIFIED |
-| LED CA | digit 1/2/3/4 | PF0/PF3/PF4/PF6 | VERIFIED cho net; cực tính UNVERIFIED |
+Thức ăn được chọn bằng **hai lượt duyệt ô trống**: đếm ô chưa bị rắn chiếm, lấy một chỉ số từ LFSR 16-bit, rồi duyệt lại để chọn ô tương ứng. Không có vòng thử ngẫu nhiên vô hạn hay mảng ô trống phụ. LFSR là số **giả ngẫu nhiên**; sau reset Proteus có thể lặp lại vị trí thức ăn đầu tiên. Thời điểm nhấn phím được trộn vào trạng thái để các lần Restart có khả năng khác nhau, không bảo đảm entropy thật.
 
-PG0 là chân vật lý **33** trên ảnh. Ảnh `so_do_chan_ban_phim.jpeg` ghi `COL-1=PC4`, `COL-2=PC5`; ảnh sơ đồ tổng thể cũ ghi `COL-1=PC3`, `COL-2=PC4`. **Hai nguồn mâu thuẫn**. Theo yêu cầu debug, source ưu tiên ảnh bàn phím mới; cần đối chiếu trực tiếp netlist hoặc dùng chế độ test trên schematic Proteus thực tế để xác nhận. PD7 chung hai đèn nền; PE0/PE1 chung nhãn Bluetooth; PD0 chung encoder; PC6 chung SERVO-2. Clock 16 MHz cần kiểm tra trong project đang dùng.
+Mỗi bước: áp dụng tối đa một hướng đã được chấp nhận; tính đầu mới bằng số nguyên có dấu; kiểm tra biên; xác định có ăn mồi; kiểm tra thân **kể cả đuôi nếu ăn**, **bỏ qua đuôi cũ nếu không ăn**; sau đó mới dịch mảng. Khi ăn, dịch từ vị trí `length` về 1 để giữ đuôi cũ, tăng đúng một đốt và cộng 10 điểm. Điểm tối đa của ván trên lưới này là 1090, phù hợp `unsigned int` của CVAVR. Nếu dài 112 đốt, chuyển `SNAKE_WIN` và không sinh thức ăn nữa.
 
-## Cấu trúc nguồn
+Các trạng thái: `SNAKE_RUNNING`, `SNAKE_PAUSED`, `SNAKE_GAME_OVER`, `SNAKE_WIN`. Va tường hoặc thân chuyển Game Over và giữ điểm. Phím 5 Pause/Resume; phím 9 Restart được nhận cả khi đang chạy, Pause, Game Over hoặc Win. Restart đặt lại rắn/điểm/thức ăn/hướng và mốc thời gian, nên không di chuyển dồn bước. Giữ phím 9 không Restart liên tục nhờ sự kiện nhấn mới của keypad. Khi kết thúc, Nokia hiện `GAME OVER` hoặc `YOU WIN`, `SCORE: 0000` và `PRESS 9`; màn hình chơi dùng toàn bộ lưới nên không hiện điểm liên tục.
 
-- `main.c`: khởi tạo GLCD/keypad/Timer1 và điều phối bằng system tick không chặn.
-- `config/board_config.h`: kích thước GLCD, giá trị contrast khởi đầu, chân backlight; ghi rõ pin mapping GLCD phải thiết lập trong project CVAVR.
-- `drivers/display.c`, `drivers/display.h`: adapter mỏng dùng GLCD của CVAVR, không tạo framebuffer riêng. API `display_init()` trả 0 nếu GLCD khởi tạo thất bại.
-- `drivers/timer.c/.h`: Timer1 CTC, tick 1 ms, đọc `unsigned long` nguyên tử.
-- `drivers/keypad.c/.h`: ba cột OUTPUT, ba hàng INPUT pull-up; kéo từng cột LOW, đọc hàng, debounce 20 ms và phát một sự kiện sau mỗi lần nhấn. Nhiều phím cùng lúc bị bỏ qua cho đến khi nhả hết. API `keypad_get_press()` trả số phím/hàng/cột cho chế độ test.
-- `game/snake_game.c/.h`: logic rắn ba đốt, hướng đi và dừng khi chạm biên; không truy cập GPIO.
-- `game/game_render.c/.h`: vẽ mỗi đốt 5×5 pixel trong ô lưới 6×6, tạo khe 1 pixel; hiển thị PAUSE/STOP qua display API.
+## CodeVisionAVR và Proteus
 
-Driver Nokia software SPI cũ đã bị loại khỏi source; **không thêm `nokia5110.c` vào project**. `display.c` hiện chỉ bọc GLCD. ALCD sẽ được thêm vào cùng module khi bắt đầu kiểm thử LCD 16×2.
+1. Trên Windows 11, mở project CodeVisionAVR **đang chạy tốt**, chọn ATmega128 và giữ clock/cấu hình GLCD/Timer1 hiện tại. Project cần sáu source: `main.c`, `drivers/display.c`, `drivers/keypad.c`, `drivers/timer.c`, `game/snake_game.c`, `game/game_render.c`. Không thêm header như source và không thêm Nokia driver cũ. Các include hiện dùng đường dẫn tương đối từ file nguồn.
+2. `KEYPAD_TEST_MODE=0` (mặc định) để chạy game. Đặt thành `1` trong `board_config.h` hoặc project defines để kiểm tra 9 phím độc lập; sau đó build lại. Khi bật test mode, Nokia hiện phím, hàng/cột và số sự kiện nhấn.
+3. Chạy **Project → Build All**. Chỉ khi CVAVR báo thành công mới lấy file Intel HEX từ đường dẫn output của project. Mã giai đoạn 3 chưa được biên dịch bằng CVAVR trong môi trường này.
+4. Trong Proteus, mở schematic gốc, gán HEX vào **Program File** của ATmega128, kiểm tra **Clock Frequency** khớp project, rồi chạy mô phỏng. Không cần sửa wiring.
 
-## Cấu hình CodeVisionAVR trên Windows 11
+### Checklist mô phỏng
 
-1. Clone/pull source trên Windows; mở CodeVisionAVR, tạo project mới, chọn **ATmega128**. Không dùng AVR-GCC/Arduino. Chọn CPU clock đúng với thuộc tính ATmega128 trong Proteus và oscillator/fuse của board. 16 MHz chỉ là dự kiến.
-2. Giữ cấu hình GLCD đã chạy. Thêm **`main.c`, `drivers/display.c`, `drivers/timer.c`, `drivers/keypad.c`, `game/snake_game.c`, `game/game_render.c`** vào Source Files. Thêm `config/`, `drivers/`, `game/` vào C Compiler include paths. Chọn output Intel HEX. Không thêm `nokia5110.c` cũ.
-3. Mở **Project → Configure → C Compiler → Libraries → Graphic Display**. Chọn **PCD8544, 84×48**, bật hỗ trợ GLCD nếu có ô chọn. Trong Connections, gán `D/C=PG0`, `DIN/DATA=PG1`, `CLK=PG2`, `RST=PG3`, `CE/CS=PG4`. Tên từng tín hiệu có thể khác giữa các phiên bản; đối chiếu vai trò điện trước khi lưu. Backlight `PD7` do `display.c` điều khiển, không đưa vào năm tín hiệu giao tiếp GLCD.
-4. Kiểm tra `glcd.h`, `font5x7.h` và cấu trúc `GLCDINIT_t` trong thư mục `INC` của đúng bản CVAVR. Mã này dùng các trường `font`, `readxmem`, `writexmem`, `temp_coef`, `bias`, `vlcd` theo manual V3.20. Nếu phiên bản cài đặt khác, đối chiếu header cùng example PCD8544 đi kèm trước khi sửa mã; không đoán API.
-5. Xác nhận project CVAVR định nghĩa `_MCU_CLOCK_FREQUENCY_` đúng clock đang chạy. Timer1 dùng prescaler 64 và `OCR1A = F_CPU / (64 × 1000) − 1`; với 16 MHz là **249**. Mã yêu cầu chia chính xác thành tick 1 ms, không thay đổi clock project. Timer1 CTC và Compare Match A chỉ do `timer.c` cấu hình; không bật Timer1 lần nữa bằng CodeWizard. GLCD giai đoạn 1 không cấu hình Timer1 trong source, nhưng cần đối chiếu cấu hình library/project đang dùng.
-6. Chạy **Project → Build All**. Chỉ sau khi báo build thành công, lấy đường dẫn `.hex` trong cửa sổ build hoặc project settings. Chưa có `.prj` tự tạo trong repo.
+1. Khởi động: ba đốt đúng vị trí, một thức ăn 3×3 không trùng thân, điểm logic bằng 0. Rắn tự đi mỗi 500 ms.
+2. Phím 2/4/6/8 đổi hướng hợp lệ; nhấn hướng ngược trực tiếp hoặc hai hướng nhanh trước một tick không làm quay 180°. Phím 5 Pause/Resume, không có bước dồn sau Resume.
+3. Dẫn đầu tới thức ăn: mỗi lần ăn dài thêm đúng một đốt, thức ăn cũ mất và thức ăn mới ở ô trống. Sau ba lần ăn: sáu đốt, điểm logic 30. Điểm chỉ hiện trên màn hình kết thúc trong giai đoạn này.
+4. Đâm tường hoặc cắn thân: hiện `GAME OVER`, giữ điểm và dừng. Đi vào ô **đuôi vừa rời** khi không ăn phải hợp lệ; khi ăn thì đuôi vẫn được tính là chiếm chỗ.
+5. Nhấn 9 khi chạy/Pause/Game Over/Win: rắn về ba đốt, điểm 0, hướng RIGHT, thức ăn hợp lệ và đợi đủ 500 ms trước bước đầu. Giữ phím 9 không lặp Restart.
+6. Điều kiện Win ở 112 ô khó đạt bằng tay: dùng test harness logic kiểm soát dữ liệu hoặc một build thử riêng gần đầy lưới. Mong đợi `YOU WIN`, điểm cuối và không sinh thêm thức ăn.
+7. Hồi quy: Nokia, keypad, Timer1, khe 1 pixel giữa đốt, và các GPIO vẫn hoạt động như trước.
 
-Khi triển khai LCD 16×2 ở giai đoạn khác: dùng `alcd.h`, vào **Libraries → Alphanumeric LCD**, chọn 16 ký tự/dòng, giao tiếp 4-bit và gán `RS=PA0`, `RW=PA1`, `E=PA2`, `D4=PA3`, `D5=PA4`, `D6=PA5`, `D7=PA6`. Chưa bật hoặc gọi ALCD trong bài kiểm tra hiện tại.
+## Kết quả kiểm tra và giới hạn
 
-## Proteus và chẩn đoán
-
-Mở schematic gốc, xác nhận Nokia PG0–PG4 và keypad PC6/PE1/PD0, PC4/PC5/PE0. Trong thuộc tính ATmega128, chọn **Program File** là HEX vừa build và đặt **Clock Frequency** khớp cấu hình CVAVR.
-
-Để bật phép thử phím, đặt `KEYPAD_TEST_MODE` bằng `1` trong `board_config.h` hoặc khai báo macro cùng tên với giá trị `1` trong cấu hình compiler của project CVAVR; đặt `0` hoặc bỏ macro để chạy rắn. Build lại và nạp HEX tương ứng. Chế độ test không gọi logic rắn, hiện số phím, hàng/cột và bộ đếm sự kiện nhấn trên Nokia. Thông tin được giữ đến lần nhấn tiếp theo.
-
-**Bài thử Proteus:**
-
-1. Bật test mode, nhấn lần lượt 1–9. Mong đợi `KEY: 1`, `ROW: 1`, `COL: 1` đến `KEY: 9`, `ROW: 3`, `COL: 3`. Nếu không khớp, kiểm tra netlist đặc biệt `COL-1`, `COL-2` và dây nút. Phần này giải quyết mâu thuẫn giữa hai ảnh.
-2. Giữ phím 2: `COUNT` chỉ tăng một lần; nhả và nhấn lại tăng thêm một. Bấm hai phím đồng thời: không phát số phím mới.
-3. Tắt test mode, thử 2 lên, 4 trái, 6 phải, 8 xuống và 5 Pause/Resume. Khi Resume, đợi đủ 500 ms mới tiến một ô.
-4. Quan sát ba đốt 5×5 pixel cách nhau 1 pixel. Rắn vẫn đi mỗi 500 ms, chặn quay 180 độ và dừng trước biên với chữ `STOP`.
-5. Xác nhận Nokia vẫn hiển thị và các chân PG0–PG4, PD7 không bị keypad/Timer1 điều khiển.
-
-Các bài thử chi tiết của phiên bản giai đoạn 2 trước đây vẫn áp dụng:
-
-1. Khởi tạo: rắn ba đốt ở ô (7,4), (6,4), (5,4) của lưới 14×8; bước lưới 6 pixel, hình vẽ mỗi đốt 5×5 pixel.
-2. Không nhấn phím: đầu rắn tiến phải một ô mỗi 500 ms; chạm biên thì dừng với chữ `STOP`.
-3. Thử riêng từng vị trí phím 1–9 và ghi lại vị trí thực trên schematic/board. Với bố trí 1–9 thông thường: 2 lên, 8 xuống, 4 trái, 6 phải, 5 Pause/Resume. Cần khởi động lại mô phỏng sau khi rắn đã dừng.
-4. Khi đang đi phải, nhấn 4: không quay đầu. Nhấn nhanh hai hướng trước cùng một bước: chỉ nhận hướng hợp lệ đầu tiên.
-5. Giữ phím hoặc bấm nhiều phím cùng lúc: không có sự kiện lặp hoặc hướng sai; sau khi nhả tất cả có thể bấm tiếp.
-6. Nhấn 5 để Pause, rắn đứng yên; nhấn lại để Resume, đợi đủ 500 ms rồi mới tiến một ô.
-7. Kiểm tra Nokia vẫn hiển thị và các chân PG0–PG4, PD7 không bị keypad/Timer1 điều khiển.
-
-Nếu màn hình trống, kiểm tra nguồn/GND, mức điện áp PCD8544, RST, CE, DIN, CLK, D/C bằng probe/logic analyzer; kiểm tra cấu hình GLCD của project và `vlcd` contrast. Nếu có hình nhưng thiếu đèn nền, kiểm tra cực tính BL và đường PD7 chung trước khi đổi mức xuất. Kiểm tra cả thông báo lỗi hoặc giới hạn license GLCD trong bản CVAVR đang dùng.
-
-## Trạng thái và bước sau
-
-Người dùng báo đã build và mô phỏng thành công **phiên bản giai đoạn 2 trước khi debug**: GLCD, Timer1, tự di chuyển và STOP hoạt động. Với thay đổi debug hiện tại, **chưa biên dịch CVAVR, chưa tạo HEX mới, chưa chạy Proteus hoặc board thực** trong môi trường này. Cần kiểm chứng keypad trên schematic thực tế do hai ảnh mâu thuẫn. Chưa triển khai thức ăn, điểm số hoặc các ngoại vi còn lại.
+Đã rà soát toàn bộ source và DOCX kiến trúc; phần đặc tả thức ăn, ô đuôi, Game Over, Win và pin keypad trong DOCX phù hợp giai đoạn này nên không sửa file Word. Đã kiểm tra logic bằng chương trình thử tạm trên máy chủ: khởi tạo/thức ăn hợp lệ, tăng trưởng/điểm, tường, cắn thân, ô đuôi vừa rời, Restart và Win 112 ô. Đây **không phải** bản build firmware CodeVisionAVR. Người dùng đã báo Prompt 1/2 chạy trên CVAVR/Proteus; **thay đổi Prompt 3 chưa được build hoặc mô phỏng** tại đây. Chưa kiểm tra board thực và chưa xác minh chất lượng ngẫu nhiên trên phần cứng.

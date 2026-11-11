@@ -3,20 +3,47 @@
 #include "snake_game.h"
 #include "game_render.h"
 
-static flash char paused_text[]="PAUSE";
-static flash char stopped_text[]="STOP";
+static flash char paused_text[]="PAUSED";
+static flash char over_text[]="GAME OVER";
+static flash char win_text[]="YOU WIN";
+static flash char restart_text[]="PRESS 9";
+static char score_text[]="SCORE: 0000";
+
+static void render_final_score(void)
+{
+    unsigned int value=snake_get_score();
+    score_text[7]=(char)('0'+value/1000);
+    score_text[8]=(char)('0'+(value/100)%10);
+    score_text[9]=(char)('0'+(value/10)%10);
+    score_text[10]=(char)('0'+value%10);
+    display_text_ram(0,18,score_text);
+    display_text(0,34,restart_text);
+}
 
 void game_render(void)
 {
     unsigned char i;
     SnakePoint point;
+    SnakeState state=snake_state();
     display_clear();
-    for (i=0; i<SNAKE_LENGTH; ++i) {
+    if (state==SNAKE_GAME_OVER) {
+        display_text(0,4,over_text);
+        render_final_score();
+        return;
+    }
+    if (state==SNAKE_WIN) {
+        display_text(0,4,win_text);
+        render_final_score();
+        return;
+    }
+    for (i=0; i<snake_length(); ++i) {
         point=snake_segment(i);
         display_fill_rect((unsigned char)(point.x*CELL_SIZE),
                           (unsigned char)(point.y*CELL_SIZE),
                           CELL_SIZE-1,CELL_SIZE-1);
     }
-    if (snake_state()==SNAKE_PAUSED) display_text(0,0,paused_text);
-    else if (snake_state()==SNAKE_STOPPED) display_text(0,0,stopped_text);
+    point=snake_food();
+    display_fill_rect((unsigned char)(point.x*CELL_SIZE+1),
+                      (unsigned char)(point.y*CELL_SIZE+1),3,3);
+    if (state==SNAKE_PAUSED) display_text(0,0,paused_text);
 }
