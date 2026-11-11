@@ -1,10 +1,10 @@
 #include <mega128.h>
-#include "board_config.h"
-#include "display.h"
-#include "timer.h"
-#include "keypad.h"
-#include "snake_game.h"
-#include "game_render.h"
+#include "../config/board_config.h"
+#include "drivers/display.h"
+#include "drivers/timer.h"
+#include "drivers/keypad.h"
+#include "game/snake_game.h"
+#include "game/game_render.h"
 
 #if KEYPAD_TEST_MODE
 static flash char keypad_title[]="KEYPAD TEST";
