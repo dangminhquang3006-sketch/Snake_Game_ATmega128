@@ -37,6 +37,47 @@
 #define KEYPAD_TEST_MODE 0
 #endif
 
+#ifndef LED7SEG_TEST_MODE
+#define LED7SEG_TEST_MODE 0
+#endif
+#ifndef LCD1602_TEST_MODE
+#define LCD1602_TEST_MODE 0
+#endif
+#if (KEYPAD_TEST_MODE+LED7SEG_TEST_MODE+LCD1602_TEST_MODE)>1
+#error Enable only one peripheral test mode at a time
+#endif
+
+/* 7SEG-CA net labels in docs/so_do_chan.jpeg. Active levels need testing. */
+#define LED7_DIGIT1_DDR DDRF.0
+#define LED7_DIGIT1_PORT PORTF.0
+#define LED7_DIGIT2_DDR DDRF.3
+#define LED7_DIGIT2_PORT PORTF.3
+#define LED7_DIGIT3_DDR DDRF.4
+#define LED7_DIGIT3_PORT PORTF.4
+#define LED7_DIGIT4_DDR DDRF.6
+#define LED7_DIGIT4_PORT PORTF.6
+#define LED7_SEG_A_DDR DDRF.1
+#define LED7_SEG_A_PORT PORTF.1
+#define LED7_SEG_B_DDR DDRF.5
+#define LED7_SEG_B_PORT PORTF.5
+#define LED7_SEG_C_DDR DDRA.7
+#define LED7_SEG_C_PORT PORTA.7
+#define LED7_SEG_D_DDR DDRD.1
+#define LED7_SEG_D_PORT PORTD.1
+#define LED7_SEG_E_DDR DDRD.2
+#define LED7_SEG_E_PORT PORTD.2
+#define LED7_SEG_F_DDR DDRF.2
+#define LED7_SEG_F_PORT PORTF.2
+#define LED7_SEG_G_DDR DDRD.3
+#define LED7_SEG_G_PORT PORTD.3
+#define LED7_SEG_DP_DDR DDRF.7
+#define LED7_SEG_DP_PORT PORTF.7
+
+/* Direct common-anode default: digit high, segment low. Verify in Proteus. */
+#define LED7_DIGIT_ON_LEVEL 1
+#define LED7_SEGMENT_ON_LEVEL 0
+#define LED7_SCAN_MS 2UL
+
 #define GRID_COLS 14
 #define GRID_ROWS 8
 #define CELL_SIZE 6

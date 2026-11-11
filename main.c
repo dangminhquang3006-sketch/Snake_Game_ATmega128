@@ -3,6 +3,8 @@
 #include "drivers/display.h"
 #include "drivers/timer.h"
 #include "drivers/keypad.h"
+#include "drivers/led7seg.h"
+#include "drivers/lcd1602.h"
 #include "game/snake_game.h"
 #include "game/game_render.h"
 
@@ -32,27 +34,63 @@ static void show_key(unsigned char key, unsigned char row, unsigned char col)
 }
 #endif
 
+#if LCD1602_TEST_MODE
+static flash char lcd_test_nokia[]="LCD TEST";
+#endif
+
+#if !KEYPAD_TEST_MODE && !LED7SEG_TEST_MODE && !LCD1602_TEST_MODE
+static void lcd_for_state(SnakeState state)
+{
+    if (state==SNAKE_RUNNING) lcd1602_show_playing();
+    else if (state==SNAKE_PAUSED) lcd1602_show_paused();
+    else lcd1602_show_result((unsigned char)(state==SNAKE_WIN),
+                             snake_get_score());
+}
+#endif
+
 void main(void)
 {
     unsigned long now_ms;
 #if KEYPAD_TEST_MODE
     unsigned char position,row,col;
+#elif LED7SEG_TEST_MODE || LCD1602_TEST_MODE
+    unsigned long last_test_change;
+    unsigned char test_phase=0;
 #else
     unsigned long last_move_ms;
+    unsigned int shown_score;
     KeyEvent key;
     SnakeState before;
     unsigned char redraw;
 #endif
 
-    if (!display_init()) {
-        while (1) { }
-    }
-    keypad_init();
-#if !KEYPAD_TEST_MODE
-    snake_init();
+#if !LED7SEG_TEST_MODE
+    if (!display_init()) while (1) { }
 #endif
+
+#if KEYPAD_TEST_MODE
+    keypad_init();
+#elif LED7SEG_TEST_MODE
+    led7seg_init();
+    led7seg_set_number(0);
+#elif LCD1602_TEST_MODE
+    lcd1602_init();
+    lcd1602_show_test_ready();
+    display_clear();
+    display_text(0,0,lcd_test_nokia);
+#else
+    lcd1602_init();
+    led7seg_init();
+    keypad_init();
+    snake_init();
+    shown_score=snake_get_score();
+    led7seg_set_number(shown_score);
+    lcd_for_state(snake_state());
+#endif
+
     timer_init();
     #asm("sei")
+
 #if KEYPAD_TEST_MODE
     display_clear();
     display_text(0,0,keypad_title);
@@ -62,11 +100,42 @@ void main(void)
         position=keypad_get_press(&row,&col);
         if (position!=0) show_key(position,row,col);
     }
-#else
-    last_move_ms=timer_get_ms();
-    game_render();
+#elif LED7SEG_TEST_MODE
+    last_test_change=timer_get_ms();
     while (1) {
         now_ms=timer_get_ms();
+        led7seg_scan(now_ms);
+        if ((unsigned long)(now_ms-last_test_change)>=2000UL) {
+            last_test_change=now_ms;
+            test_phase=(unsigned char)((test_phase+1u)&3u);
+            if (test_phase==0) led7seg_set_number(0);
+            else if (test_phase==1) led7seg_set_number(1234);
+            else if (test_phase==2) led7seg_set_number(5678);
+            else led7seg_set_number(9999);
+        }
+    }
+#elif LCD1602_TEST_MODE
+    last_test_change=timer_get_ms();
+    while (1) {
+        now_ms=timer_get_ms();
+        if (lcd1602_is_dirty()) lcd1602_service();
+        if ((unsigned long)(now_ms-last_test_change)>=2000UL) {
+            last_test_change=now_ms;
+            test_phase=(unsigned char)((test_phase+1u)&3u);
+            if (test_phase==0) lcd1602_show_test_ready();
+            else if (test_phase==1) lcd1602_show_playing();
+            else if (test_phase==2) lcd1602_show_paused();
+            else lcd1602_show_result(0,50);
+        }
+    }
+#else
+    last_move_ms=timer_get_ms();
+    led7seg_blank();
+    game_render();
+    led7seg_resume();
+    while (1) {
+        now_ms=timer_get_ms();
+        led7seg_scan(now_ms);
         keypad_update(now_ms);
         redraw=0;
         key=keypad_get_event();
@@ -82,10 +151,24 @@ void main(void)
         }
         if (snake_state()==SNAKE_RUNNING &&
             (unsigned long)(now_ms-last_move_ms)>=SNAKE_MOVE_MS) {
-            last_move_ms=now_ms; /* Drop overdue ticks: at most one step. */
+            last_move_ms=now_ms;
             redraw=snake_step();
         }
-        if (redraw) game_render();
+        if (shown_score!=snake_get_score()) {
+            shown_score=snake_get_score();
+            led7seg_set_number(shown_score);
+        }
+        if (redraw) {
+            lcd_for_state(snake_state());
+            led7seg_blank();
+            game_render();
+            led7seg_resume();
+        }
+        if (lcd1602_is_dirty()) {
+            led7seg_blank();
+            lcd1602_service();
+            led7seg_resume();
+        }
     }
 #endif
 }
