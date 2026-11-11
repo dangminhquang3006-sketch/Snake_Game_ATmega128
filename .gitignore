@@ -1,0 +1,19 @@
+# CodeVisionAVR generated files
+*.obj
+*.o
+*.lst
+*.map
+*.asm
+
+# Build output
+build/
+output/
+Output/
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# VS Code local settings
+.vscode/
