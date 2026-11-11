@@ -38,7 +38,7 @@ static void show_key(unsigned char key, unsigned char row, unsigned char col)
 static flash char lcd_test_nokia[]="LCD TEST";
 #endif
 
-#if !KEYPAD_TEST_MODE && !LED7SEG_TEST_MODE && !LCD1602_TEST_MODE
+#if !KEYPAD_TEST_MODE && !LED7SEG_TEST_MODE && !LCD1602_TEST_MODE && !LED7_LCD_TEST_MODE
 static void lcd_for_state(SnakeState state)
 {
     if (state==SNAKE_RUNNING) lcd1602_show_playing();
@@ -53,7 +53,7 @@ void main(void)
     unsigned long now_ms;
 #if KEYPAD_TEST_MODE
     unsigned char position,row,col;
-#elif LED7SEG_TEST_MODE || LCD1602_TEST_MODE
+#elif LED7SEG_TEST_MODE || LCD1602_TEST_MODE || LED7_LCD_TEST_MODE
     unsigned long last_test_change;
     unsigned char test_phase=0;
 #else
@@ -64,7 +64,7 @@ void main(void)
     unsigned char redraw;
 #endif
 
-#if !LED7SEG_TEST_MODE
+#if !LED7SEG_TEST_MODE && !LED7_LCD_TEST_MODE
     if (!display_init()) while (1) { }
 #endif
 
@@ -78,6 +78,11 @@ void main(void)
     lcd1602_show_test_ready();
     display_clear();
     display_text(0,0,lcd_test_nokia);
+#elif LED7_LCD_TEST_MODE
+    lcd1602_init();
+    lcd1602_show_test_ready();
+    led7seg_init();
+    led7seg_set_number(1234);
 #else
     lcd1602_init();
     led7seg_init();
@@ -126,6 +131,24 @@ void main(void)
             else if (test_phase==1) lcd1602_show_playing();
             else if (test_phase==2) lcd1602_show_paused();
             else lcd1602_show_result(0,50);
+        }
+    }
+#elif LED7_LCD_TEST_MODE
+    last_test_change=timer_get_ms();
+    while (1) {
+        now_ms=timer_get_ms();
+        led7seg_scan(now_ms);
+        if (lcd1602_is_dirty()) {
+            led7seg_blank();
+            lcd1602_service();
+            led7seg_resume();
+        }
+        if ((unsigned long)(now_ms-last_test_change)>=2000UL) {
+            last_test_change=now_ms;
+            test_phase=(unsigned char)((test_phase+1u)%3u);
+            if (test_phase==0) led7seg_set_number(1234);
+            else if (test_phase==1) led7seg_set_number(5678);
+            else led7seg_set_number(9090);
         }
     }
 #else
