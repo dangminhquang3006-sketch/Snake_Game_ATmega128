@@ -1,5 +1,6 @@
 #include "../config/board_config.h"
 #include "snake_game.h"
+#include "game_map.h"
 
 typedef enum { DIR_UP=0, DIR_RIGHT, DIR_DOWN, DIR_LEFT } SnakeDirection;
 
@@ -43,7 +44,7 @@ static void place_food(void)
     unsigned char x,y,empty_count=0,target;
     for (y=0; y<GRID_ROWS; ++y)
         for (x=0; x<GRID_COLS; ++x)
-            if (!occupied(x,y)) ++empty_count;
+            if (!game_map_is_blocked(x,y) && !occupied(x,y)) ++empty_count;
 
     if (empty_count==0) {
         state=SNAKE_WIN;
@@ -52,7 +53,7 @@ static void place_food(void)
     target=(unsigned char)(random_next() % empty_count);
     for (y=0; y<GRID_ROWS; ++y) {
         for (x=0; x<GRID_COLS; ++x) {
-            if (!occupied(x,y)) {
+            if (!game_map_is_blocked(x,y) && !occupied(x,y)) {
                 if (target==0) {
                     food.x=x;
                     food.y=y;
@@ -121,6 +122,10 @@ unsigned char snake_step(void)
         state=SNAKE_GAME_OVER;
         return 1;
     }
+    if (game_map_is_blocked(new_x,new_y)) {
+        state=SNAKE_GAME_OVER;
+        return 1;
+    }
     new_head.x=(unsigned char)new_x;
     new_head.y=(unsigned char)new_y;
     growing=(unsigned char)(new_head.x==food.x && new_head.y==food.y);
@@ -135,7 +140,7 @@ unsigned char snake_step(void)
     }
 
     if (growing) {
-        /* Food occupies a free cell, so length is below the 112-cell limit. */
+        /* Food occupies a free cell, so length is below map capacity. */
         for (i=current_length; i>0; --i) segments[i]=segments[i-1];
         ++current_length;
         score=(unsigned int)(score+10u);
@@ -145,7 +150,7 @@ unsigned char snake_step(void)
     }
     segments[0]=new_head;
 
-    if (current_length==SNAKE_MAX_LENGTH) state=SNAKE_WIN;
+    if (current_length==game_map_get_free_cells()) state=SNAKE_WIN;
     else if (growing) place_food();
     return 1;
 }

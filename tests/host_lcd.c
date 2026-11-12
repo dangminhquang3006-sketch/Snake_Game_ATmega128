@@ -38,11 +38,14 @@ int main(void)
     assert(memcmp(screen[1],"EASY BEST:0120  ",16)==0);
     lcd1602_show_menu(GAME_LEVEL_NORMAL,80); finish_update();
     assert(memcmp(screen[1],"NORMAL BEST:0080",16)==0);
-    lcd1602_show_playing(GAME_LEVEL_HARD); finish_update();
-    assert(memcmp(screen[0],"LEVEL: HARD     ",16)==0);
+    lcd1602_show_map_menu(MAP_PILLARS,120); finish_update();
+    assert(memcmp(screen[0],"MAP: PILLARS    ",16)==0);
+    assert(memcmp(screen[1],"BEST: 0120      ",16)==0);
+    lcd1602_show_playing(GAME_LEVEL_HARD,MAP_LABYRINTH); finish_update();
+    assert(memcmp(screen[0],"HARD LABYRINTH  ",16)==0);
     assert(memcmp(screen[1],"STATUS: PLAYING ",16)==0);
-    lcd1602_show_paused(GAME_LEVEL_NORMAL); finish_update();
-    assert(memcmp(screen[0],"LEVEL: NORMAL   ",16)==0);
+    lcd1602_show_paused(GAME_LEVEL_NORMAL,MAP_PILLARS); finish_update();
+    assert(memcmp(screen[0],"NORMAL PILLARS  ",16)==0);
     assert(memcmp(screen[1],"GAME PAUSED     ",16)==0);
     lcd1602_show_result(0,50); finish_update();
     assert(memcmp(screen[0],"GAME OVER       ",16)==0);

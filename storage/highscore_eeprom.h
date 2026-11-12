@@ -10,8 +10,8 @@ typedef enum {
 } HighscoreSaveResult;
 
 void highscore_init(void);
-unsigned int highscore_get(GameLevel level);
-HighscoreSaveResult highscore_record_result(GameLevel level,
+unsigned int highscore_get(GameLevel level, MapId map);
+HighscoreSaveResult highscore_record_result(GameLevel level, MapId map,
                                             unsigned int score);
 
 #endif

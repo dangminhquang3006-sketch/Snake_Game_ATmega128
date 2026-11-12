@@ -2,6 +2,7 @@
 #include "../drivers/display.h"
 #include "snake_game.h"
 #include "game_render.h"
+#include "game_map.h"
 
 static flash char paused_text[]="PAUSED";
 static flash char over_text[]="GAME OVER";
@@ -24,7 +25,7 @@ static void render_final_score(void)
 
 void game_render(void)
 {
-    unsigned char i;
+    unsigned char i,x,y;
     SnakePoint point;
     SnakeState state=snake_state();
     display_clear();
@@ -38,14 +39,18 @@ void game_render(void)
         render_final_score();
         return;
     }
+    for (y=0; y<GRID_ROWS; ++y) for (x=0; x<GRID_COLS; ++x)
+        if (game_map_is_blocked(x,y))
+            display_rect((unsigned char)(x*CELL_SIZE),
+                         (unsigned char)(y*CELL_SIZE),CELL_SIZE,CELL_SIZE);
+    point=snake_food();
+    display_fill_rect((unsigned char)(point.x*CELL_SIZE+1),
+                      (unsigned char)(point.y*CELL_SIZE+1),3,3);
     for (i=0; i<snake_length(); ++i) {
         point=snake_segment(i);
         display_fill_rect((unsigned char)(point.x*CELL_SIZE),
                           (unsigned char)(point.y*CELL_SIZE),
                           CELL_SIZE-1,CELL_SIZE-1);
     }
-    point=snake_food();
-    display_fill_rect((unsigned char)(point.x*CELL_SIZE+1),
-                      (unsigned char)(point.y*CELL_SIZE+1),3,3);
     if (state==SNAKE_PAUSED) display_text(0,0,paused_text);
 }

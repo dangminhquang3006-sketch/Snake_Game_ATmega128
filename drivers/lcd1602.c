@@ -6,7 +6,6 @@ static char desired[32];
 static char shown[32];
 static unsigned char next_position=0;
 
-static flash char level_prefix[]="LEVEL: ";
 static flash char easy_name[]="EASY";
 static flash char normal_name[]="NORMAL";
 static flash char hard_name[]="HARD";
@@ -19,6 +18,10 @@ static flash char over_line1[]="GAME OVER";
 static flash char win_line1[]="YOU WIN!";
 static flash char score_prefix[]="SCORE: ";
 static flash char ready_line2[]="STATUS: READY";
+static flash char map_prefix[]="MAP: ";
+static flash char classic_name[]="CLASSIC";
+static flash char pillars_name[]="PILLARS";
+static flash char labyrinth_name[]="LABYRINTH";
 
 static void spaces(void)
 {
@@ -50,6 +53,13 @@ static unsigned char copy_level(unsigned char offset, GameLevel level)
     return 4;
 }
 
+static void copy_map(unsigned char offset, MapId map)
+{
+    if (map==MAP_PILLARS) copy_flash(offset,pillars_name);
+    else if (map==MAP_LABYRINTH) copy_flash(offset,labyrinth_name);
+    else copy_flash(offset,classic_name);
+}
+
 static void put_four_digits(unsigned char offset, unsigned int value)
 {
     if (value>9999u) value=9999u;
@@ -59,11 +69,12 @@ static void put_four_digits(unsigned char offset, unsigned int value)
     desired[offset+3]=(char)('0'+value%10u);
 }
 
-static void show_level_line(GameLevel level)
+static void show_game_line(GameLevel level, MapId map)
 {
+    unsigned char length;
     spaces();
-    copy_flash(0,level_prefix);
-    copy_level(7,level);
+    length=copy_level(0,level);
+    copy_map((unsigned char)(length+1u),map);
 }
 
 void lcd1602_init(void)
@@ -88,15 +99,24 @@ void lcd1602_show_menu(GameLevel level, unsigned int best)
     put_four_digits((unsigned char)(offset+5),best);
 }
 
-void lcd1602_show_playing(GameLevel level)
+void lcd1602_show_map_menu(MapId map, unsigned int best)
 {
-    show_level_line(level);
+    spaces();
+    copy_flash(0,map_prefix);
+    copy_map(5,map);
+    copy_flash(16,best_prefix);
+    put_four_digits(22,best);
+}
+
+void lcd1602_show_playing(GameLevel level, MapId map)
+{
+    show_game_line(level,map);
     copy_flash(16,playing_line2);
 }
 
-void lcd1602_show_paused(GameLevel level)
+void lcd1602_show_paused(GameLevel level, MapId map)
 {
-    show_level_line(level);
+    show_game_line(level,map);
     copy_flash(16,paused_line2);
 }
 
