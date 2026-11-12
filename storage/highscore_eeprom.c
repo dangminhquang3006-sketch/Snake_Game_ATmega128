@@ -89,7 +89,7 @@ void highscore_init(void)
 
 unsigned int highscore_get(GameLevel level)
 {
-    if (level>GAME_LEVEL_HARD) return 0;
+    if ((unsigned int)level>=3u) return 0;
     return best_scores[(unsigned char)level];
 }
 
@@ -99,7 +99,7 @@ HighscoreSaveResult highscore_record_result(GameLevel level,
     unsigned char data[HS_DATA_SIZE];
     unsigned char slot,i,crc=0;
     unsigned int next_sequence,verify_scores[3],verify_sequence,old_score;
-    if (level>GAME_LEVEL_HARD || score>GAME_MAX_SCORE ||
+    if ((unsigned int)level>=3u || score>GAME_MAX_SCORE ||
         score%10u!=0) return HIGHSCORE_SAVE_FAILED;
     if (score<=best_scores[(unsigned char)level]) return HIGHSCORE_UNCHANGED;
 

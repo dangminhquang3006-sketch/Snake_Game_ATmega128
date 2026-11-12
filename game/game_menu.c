@@ -14,7 +14,7 @@ static flash char help_text[]="2/8:MOVE 5:OK";
 
 void game_menu_init(GameLevel selected)
 {
-    if (selected>GAME_LEVEL_HARD) selected=GAME_LEVEL_EASY;
+    if ((unsigned int)selected>=3u) selected=GAME_LEVEL_EASY;
     selected_level=selected;
 }
 

@@ -1,6 +1,6 @@
-# Snake Game ATmega128 — giai đoạn 5
+# Snake Game ATmega128 — kiểm định giai đoạn 6
 
-Firmware Embedded C cho **CodeVisionAVR**. Nokia 5110 hiển thị game và menu; LED 7 đoạn CA hiển thị điểm; LCD 16×2 hiển thị cấp độ, trạng thái và kỷ lục. Source được sửa trên Ubuntu; build HEX bằng CodeVisionAVR trên Windows, thử trong Proteus rồi mới nạp board thật. Người dùng xác nhận Prompt 1–4 đã hoạt động trên Proteus; **thay đổi Prompt 5 chưa được build hoặc mô phỏng tại đây**.
+Firmware Embedded C cho **CodeVisionAVR**. Nokia 5110 hiển thị game và menu; LED 7 đoạn CA hiển thị điểm; LCD 16×2 hiển thị cấp độ, trạng thái và kỷ lục. Source được sửa trên Ubuntu; build HEX bằng CodeVisionAVR trên Windows, thử trong Proteus rồi mới nạp board thật. Người dùng báo hệ thống đã có kết quả mô phỏng Proteus; workspace này không có log Build All hoặc mô phỏng để đối chiếu. Kết quả kiểm định tại đây nằm trong [báo cáo cuối](docs/final_validation_report.md).
 
 ## Cấu trúc source
 
@@ -57,11 +57,20 @@ Khi cập nhật firmware, **không tự động nạp file `.eep`** của bản
 
 Theo `docs/so_do_chan_mach.jpeg`: Nokia DC/DIN/CLK/RST/CS = PG0/PG1/PG2/PG3/PG4, BL = PD7; keypad ROW1/2/3 = PC6/PE1/PD0, COL1/2/3 = PC4/PC5/PE0; LCD RS/RW/E/D4/D5/D6/D7 = PA0/PA1/PA2/PA3/PA4/PA5/PA6. Cụm LED **7SEG-CA** dùng Digit 1–4 = PF0/PF3/PF4/PF6; A/B/C/D/E/F/G/DP = PF1/PF5/PA7/PD1/PD2/PF2/PD3/PF7. PA7 dùng chung PORTA với LCD; không đổi wiring. Mức kích hoạt LED và hành vi ghi PORTA của `alcd.h` phụ thuộc cấu hình/board thực tế, đã được người dùng kiểm thử trong Prompt 4.
 
+| Ngoại vi | Tín hiệu → GPIO |
+|---|---|
+| Nokia 5110 | DC→PG0, DIN→PG1, CLK→PG2, RST→PG3, CS→PG4, BL→PD7 |
+| Keypad 3×3 | ROW1→PC6, ROW2→PE1, ROW3→PD0; COL1→PC4, COL2→PC5, COL3→PE0 |
+| LCD 16×2 | RS→PA0, RW→PA1, E→PA2, D4→PA3, D5→PA4, D6→PA5, D7→PA6 |
+| LED 7SEG-CA | Digit 1/2/3/4→PF0/PF3/PF4/PF6; A/B/C/D/E/F/G/DP→PF1/PF5/PA7/PD1/PD2/PF2/PD3/PF7 |
+
+Keypad PE0/PE1 còn là PDI/PDO khi ATmega128 được nạp nối tiếp; kiểm tra mạch ISP và ngoại vi nối chung trước khi nạp. PF4–PF7 liên quan JTAG; kiểm tra JTAGEN/JTD nếu LED có digit/segment không hoạt động. Theo [datasheet ATmega128](https://ww1.microchip.com/downloads/en/DeviceDoc/doc2467.pdf), fuse EESAVE quyết định EEPROM có được giữ qua chip erase hay không; chỉ thay đổi fuse sau khi đã đọc cấu hình board thực tế.
+
 ## CodeVisionAVR và Proteus
 
 1. Mở project CVAVR đang chạy Prompt 4, giữ ATmega128, clock, cấu hình GLCD/ALCD và Timer1. Thêm **hai source mới** `game/game_menu.c` và `storage/highscore_eeprom.c`; tổng cộng **10 file `.c`**: `main.c`, `drivers/display.c`, `drivers/keypad.c`, `drivers/timer.c`, `drivers/led7seg.c`, `drivers/lcd1602.c`, `game/snake_game.c`, `game/game_render.c`, `game/game_menu.c`, `storage/highscore_eeprom.c`. Không thêm header như source. Các include dùng đường dẫn tương đối từ từng file.
 2. Đặt `KEYPAD_TEST_MODE`, `LED7SEG_TEST_MODE`, `LCD1602_TEST_MODE`, `LED7_LCD_TEST_MODE` bằng `0` để chạy game. Giữ ALCD 4-bit: RS=PA0, RW=PA1, E=PA2, D4–D7=PA3–PA6. Kiểm tra phiên bản `alcd.h` đang cài và cấu hình từng chân trước build.
-3. Chọn **Project → Build All**. Kiểm tra không có lỗi, ghi lại Flash/SRAM usage và đường dẫn file Intel HEX mà project xuất ra. Chỉ lấy HEX sau khi build CVAVR thành công; source Prompt 5 chưa được build bằng CVAVR trong môi trường này.
+3. Chọn **Project → Build All**. Kiểm tra không có lỗi compiler/linker, phân loại warning, ghi lại Flash/SRAM usage và đường dẫn file Intel HEX mà project xuất ra. Chỉ lấy HEX sau khi build CVAVR thành công; lần kiểm định này không chạy được CVAVR.
 4. Trong Proteus, mở schematic gốc, chọn ATmega128, gán HEX vào **Program File**, xác nhận **Clock Frequency** khớp project rồi chạy. Không thay đổi sơ đồ chân.
 
 ### Checklist Proteus
@@ -73,6 +82,23 @@ Theo `docs/so_do_chan_mach.jpeg`: Nokia DC/DIN/CLK/RST/CS = PG0/PG1/PG2/PG3/PG4,
 5. Tạo kỷ lục EASY 50, rồi ván EASY 30 (không ghi), rồi EASY 80 (ghi); NORMAL/HARD không đổi. Reset MCU và kiểm tra giá trị được nạp từ EEPROM; kiểm tra cả trường hợp xóa EEPROM và bản ghi CRC sai. Phân biệt reset MCU với dừng/nạp lại mô phỏng vì Proteus có thể xử lý EEPROM khác board thật.
 6. Quan sát LCD, Nokia, LED cùng lúc, đặc biệt PA7 và độ nhấp nháy khi render/ghi EEPROM. Kiểm tra lại mọi chức năng Prompt 1–4.
 
+## Kiểm tra logic bằng host
+
+Chạy `sh tests/run_host_validation.sh` trên Ubuntu để kiểm tra logic Snake, menu, định dạng LCD và bản ghi EEPROM bằng mock. Thư mục `tests/mock/` chỉ dành cho host; **không thêm các file test hoặc mock vào project CodeVisionAVR**. Lệnh này không tạo firmware ATmega128 và không thay thế Build All hay Proteus.
+
+## Bring-up board thực
+
+1. **Nguồn:** đo VCC/AVCC/GND của MCU, nguồn LCD và Nokia, mức logic ở chân Nokia; xác minh giới hạn của module Nokia thực tế và mạch chuyển mức trước khi cấp tín hiệu từ MCU. Chip PCD8544 gốc có dải VDD logic 2,7–3,3 V theo [datasheet PCD8544](https://cdn-shop.adafruit.com/datasheets/pcd8544.pdf); không suy ra module thực tế chịu được 5 V nếu chưa kiểm tra mạch trên module. Đo điện trở hạn dòng, dòng từng đoạn/digit và mạch đệm 7SEG-CA.
+2. **Clock/reset:** đo thạch anh hoặc nguồn clock, đối chiếu fuse với clock trong project CVAVR. Với 16 MHz và prescaler 64, Timer1 CTC cần OCR1A=249 để tạo tick 1 ms. Không tự thay fuse clock khi chưa xác minh board.
+3. **ISP:** kiểm tra sơ đồ header/programmer, nguồn chung và RESET; đối chiếu đường nạp ATmega128 (PDI/PE0, PDO/PE1, SCK/PB1) theo datasheet, đọc device signature, lưu cấu hình fuse hiện tại, nạp HEX và verify Flash. Kiểm tra chip erase/EESAVE và sao lưu EEPROM trước khi nạp bản mới nếu cần giữ kỷ lục. Không giả định MOSI/MISO PB2/PB3 của SPI chạy thường là đường dữ liệu nạp nối tiếp ATmega128.
+4. **Ngoại vi:** thử lần lượt Nokia, keypad, LCD 16×2, LED CA bằng các macro test sẵn có; sau đó `LED7_LCD_TEST_MODE=1`, rồi đặt tất cả macro test về `0` và nạp firmware game. Kiểm tra tốc độ ba level, phím, EEPROM qua reset và qua mất nguồn thật.
+
+## Tài nguyên và giới hạn
+
+ATmega128 có Flash 128 KB, SRAM 4 KB, EEPROM 4 KB theo [Microchip](https://www.microchip.com/en-us/product/ATmega128). Các mảng xác định trực tiếp gồm rắn 112×2=224 byte, LCD hai dòng đệm 32+32=64 byte, LED 4 byte và cache kỷ lục ba số 16-bit=6 byte: **298 byte**, chưa kể biến trạng thái, stack và bộ nhớ thư viện GLCD/ALCD. Không có framebuffer Nokia thứ hai trong source. Cần lấy số Flash/SRAM và thông tin stack từ báo cáo CVAVR; không suy ra tổng sử dụng từ các mảng này.
+
+Driver LED chuyển digit khoảng mỗi 2 ms, tương ứng khoảng 125 Hz mỗi digit khi vòng lặp chính không bị chặn. Render GLCD và ghi EEPROM khi kết thúc có thể làm trống LED ngắn hạn; mức nhấp nháy và ghosting phải đo trên Proteus/board. Chưa đo mức điện áp và dòng trên board thật, cũng chưa kiểm chứng phiên bản `alcd.h` trong Windows tác động tới PA7 như thế nào.
+
 ## Trạng thái kiểm tra
 
-Đã chạy kiểm tra host C89 với mock EEPROM/ALCD/GLCD cho menu, chu kỳ, định dạng LCD, ghi kỷ lục theo level, không ghi điểm thấp hơn, đọc lại sau reset và khôi phục bản ghi cũ khi slot mới hỏng. Đây **không phải** build CodeVisionAVR hoặc mô phỏng Proteus. Cần người dùng chạy Build All, nạp HEX, kiểm tra EEPROM persistence và ghi lại Flash/SRAM usage trên Windows/Proteus.
+Đã chạy bộ kiểm tra host C89 trong `tests/` cho khởi tạo/di chuyển/va chạm/Win, menu, định dạng LCD, EEPROM theo level, bản ghi hỏng và sequence quay vòng. Đã kiểm tra cấu trúc DOCX và GPIO trên source/sơ đồ. Đây **không phải** build CodeVisionAVR hoặc mô phỏng Proteus. Ma trận 16 nhóm test, trạng thái PASS/NOT RUN/BLOCKED và rủi ro tồn tại được ghi trong [báo cáo cuối](docs/final_validation_report.md).
