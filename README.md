@@ -1,79 +1,72 @@
-# Snake Game ATmega128 — giai đoạn 4
+# Snake Game ATmega128 — giai đoạn 5
 
-Firmware Embedded C cho **CodeVisionAVR**. Game hiện có rắn, thức ăn, điểm, Pause/Resume, Game Over, Win và Restart; giai đoạn 4 bổ sung LED 7 đoạn CA hiển thị điểm và LCD 16×2 hiển thị cấp độ/trạng thái. Chưa có EEPROM hoặc menu chọn cấp độ.
+Firmware Embedded C cho **CodeVisionAVR**. Nokia 5110 hiển thị game và menu; LED 7 đoạn CA hiển thị điểm; LCD 16×2 hiển thị cấp độ, trạng thái và kỷ lục. Source được sửa trên Ubuntu; build HEX bằng CodeVisionAVR trên Windows, thử trong Proteus rồi mới nạp board thật. Người dùng xác nhận Prompt 1–4 đã hoạt động trên Proteus; **thay đổi Prompt 5 chưa được build hoặc mô phỏng tại đây**.
 
-## Phần cứng và source
+## Cấu trúc source
 
-Giữ nguyên cấu hình Nokia PCD8544 đã kiểm thử: `glcd.h`, `font5x7`, 84×48 pixel; DC=PG0, DIN=PG1, CLK=PG2, RST=PG3, CS=PG4, BL=PD7. Keypad theo ảnh `docs/so_do_chan_ban_phim.jpeg`: ROW-1=PC6/41, ROW-2=PE1/3, ROW-3=PD0/25; COL-1=PC4/39, COL-2=PC5/40, COL-3=PE0/2. Ba cột là OUTPUT; ba hàng là INPUT có pull-up nội. Driver quét từng cột LOW, chống dội 20 ms và phát một sự kiện nhấn mới. Ảnh schematic tổng thể cũ ghi COL-1/COL-2 khác ảnh bàn phím; kết quả kiểm thử keypad trên Proteus theo thông tin người dùng là nguồn xác nhận cho mapping hiện tại. Không thay đổi chân trong giai đoạn này.
-
-| File | Trách nhiệm |
+| Module | Vai trò |
 |---|---|
-| `main.c` | Khởi tạo, đọc phím, lập lịch bước 500 ms, vẽ khi trạng thái thay đổi |
-| `config/board_config.h` | Chân GPIO và kích thước 14×8, bước lưới 6 pixel |
-| `drivers/display.c/.h` | Bao bọc GLCD và font hiện có; không có framebuffer thứ hai |
-| `drivers/keypad.c/.h` | Quét phím; thêm `KEY_RESTART` cho phím 9 |
-| `drivers/timer.c/.h` | Timer1 CTC, tick 1 ms và đọc thời gian nguyên tử; không thay đổi |
-| `drivers/led7seg.c/.h` | Quét 4 digit của cụm 7SEG-CA bằng GPIO, hiển thị điểm 0000–9999 |
-| `drivers/lcd1602.c/.h` | Wrapper `alcd.h`, ghi tối đa một ký tự mỗi lần service |
-| `game/snake_game.c/.h` | Toàn bộ dữ liệu và quy tắc trò chơi, độc lập GLCD/GPIO |
-| `game/game_render.c/.h` | Vẽ rắn, thức ăn, Pause, Game Over, Win và điểm cuối |
+| `main.c` | `APP_STATE_MENU`/`APP_STATE_GAME`, khởi tạo và lập lịch không chặn |
+| `game/game_menu.c/.h` | Cấp độ đang chọn, phím menu, chu kỳ di chuyển, vẽ menu Nokia |
+| `game/snake_game.c/.h` | Rắn, thức ăn, va chạm, điểm và trạng thái gameplay; không đổi |
+| `game/game_render.c/.h` | Vẽ gameplay và lời nhắc `9:RESTART`, `1:MENU` khi kết thúc |
+| `storage/highscore_eeprom.c/.h` | Kỷ lục ba cấp độ, kiểm tra và ghi EEPROM nội |
+| `drivers/keypad.c/.h` | Thêm `KEY_MENU` cho phím 1; debounce và các phím cũ giữ nguyên |
+| `drivers/lcd1602.c/.h` | Wrapper `alcd.h`; menu, level, trạng thái, score; chỉ ghi ký tự thay đổi |
+| `drivers/display.c/.h`, `led7seg.c/.h`, `timer.c/.h` | GLCD, LED CA, Timer1 1 ms; giữ thuật toán Prompt 4 |
+| `config/board_config.h` | Pin mapping, macro test và ba chu kỳ di chuyển |
 
-## Logic trò chơi
+## Menu, tốc độ và phím
 
-Lưới có **14×8 = 112 ô**. `SnakePoint` gồm hai tọa độ 8-bit. Mảng tĩnh chứa tối đa 112 đốt (224 byte tọa độ), biến chiều dài chỉ ra phần đang dùng. Rắn bắt đầu với ba đốt ở (7,4), (6,4), (5,4), hướng RIGHT và điểm 0. Mỗi đốt được tô 5×5 pixel trên bước 6 pixel; thức ăn là ô 3×3 pixel đặt lệch (1,1) trong ô logic.
+Sau reset, ứng dụng vào menu với EASY được chọn; Snake chưa khởi tạo để chạy. Nokia hiện tên game, ba lựa chọn có dấu `>` và lời nhắc. Font 5×7 chiếm tối đa 6 pixel ngang/ký tự: dòng dài nhất `2/8:MOVE 5:OK` có 13 ký tự, rộng 78 pixel; các dòng ở y=0,10,18,26,40 nằm trong 84×48. Màn hình chỉ được vẽ lại khi chọn khác hoặc chuyển trạng thái.
 
-Thức ăn được chọn bằng **hai lượt duyệt ô trống**: đếm ô chưa bị rắn chiếm, lấy một chỉ số từ LFSR 16-bit, rồi duyệt lại để chọn ô tương ứng. Không có vòng thử ngẫu nhiên vô hạn hay mảng ô trống phụ. LFSR là số **giả ngẫu nhiên**; sau reset Proteus có thể lặp lại vị trí thức ăn đầu tiên. Thời điểm nhấn phím được trộn vào trạng thái để các lần Restart có khả năng khác nhau, không bảo đảm entropy thật.
+| Cấp độ | Chu kỳ di chuyển |
+|---|---:|
+| EASY | 500 ms |
+| NORMAL | 300 ms |
+| HARD | 150 ms |
 
-Mỗi bước: áp dụng tối đa một hướng đã được chấp nhận; tính đầu mới bằng số nguyên có dấu; kiểm tra biên; xác định có ăn mồi; kiểm tra thân **kể cả đuôi nếu ăn**, **bỏ qua đuôi cũ nếu không ăn**; sau đó mới dịch mảng. Khi ăn, dịch từ vị trí `length` về 1 để giữ đuôi cũ, tăng đúng một đốt và cộng 10 điểm. Điểm tối đa của ván trên lưới này là 1090, phù hợp `unsigned int` của CVAVR. Nếu dài 112 đốt, chuyển `SNAKE_WIN` và không sinh thức ăn nữa.
+`game_get_move_period()` là nguồn duy nhất cho chu kỳ. Timer1 vẫn tick 1 ms; main dùng `(unsigned long)(now_ms-last_move_ms)>=move_period_ms` nên so sánh chịu được tràn tick 32-bit. Không dùng delay để di chuyển. Mốc thời gian được đặt lại khi Start, Resume và Restart; không có bước dồn từ thời gian đứng ở menu hoặc Pause. `timer_get_ms()` đọc bộ đếm ISR một cách nguyên tử.
 
-Các trạng thái: `SNAKE_RUNNING`, `SNAKE_PAUSED`, `SNAKE_GAME_OVER`, `SNAKE_WIN`. Va tường hoặc thân chuyển Game Over và giữ điểm. Phím 5 Pause/Resume; phím 9 Restart được nhận cả khi đang chạy, Pause, Game Over hoặc Win. Restart đặt lại rắn/điểm/thức ăn/hướng và mốc thời gian, nên không di chuyển dồn bước. Giữ phím 9 không Restart liên tục nhờ sự kiện nhấn mới của keypad. Khi kết thúc, Nokia hiện `GAME OVER` hoặc `YOU WIN`, `SCORE: 0000` và `PRESS 9`; màn hình chơi dùng toàn bộ lưới nên không hiện điểm liên tục.
+| Trạng thái | Phím |
+|---|---|
+| Menu | 2 lên, 8 xuống (xoay vòng), 5 chọn và Start |
+| Running | 2/4/6/8 đổi hướng, 5 Pause, 9 Restart |
+| Paused | 5 Resume, 9 Restart |
+| Game Over/Win | 9 Restart cùng cấp độ, 1 về menu |
+
+Menu là trạng thái cấp ứng dụng; `snake_game.c` vẫn chỉ quản lý RUNNING, PAUSED, GAME_OVER và WIN. Khi quay về menu, lựa chọn mặc định là cấp độ vừa chơi. Phím 1 được phát qua `KeyEvent` hiện có nên một lần nhấn chỉ được xử lý một lần. Khi vào menu, LED hiện `0000`; khi chơi, LED lấy score trực tiếp từ `snake_get_score()` và giữ điểm cuối ở Game Over/Win.
+
+LCD menu hiện `SELECT LEVEL` và `<LEVEL> BEST:dddd`; chuỗi dài nhất `NORMAL BEST:0080` vừa đúng 16 ký tự. Gameplay hiện `LEVEL: EASY/NORMAL/HARD` và `STATUS: PLAYING` hoặc `GAME PAUSED`; khi kết thúc hiện `GAME OVER`/`YOU WIN!` và `SCORE: dddd`. Wrapper dùng `lcd_init(16)`, `lcd_gotoxy`, `lcd_putchar`; hai mảng 32 byte lưu nội dung mong muốn/đã hiện, chỉ một ký tự khác biệt được ghi trong mỗi vòng lặp. Trước mỗi lần ghi ALCD, main tắt các digit LED rồi khôi phục; không gọi LCD hoặc LED từ Timer ISR.
+
+## EEPROM High Score
+
+CodeVisionAVR hỗ trợ biến toàn cục với thuộc tính `eeprom`; mã dùng `eeprom unsigned char hs_slot_a[13]` và `hs_slot_b[13]`, truy cập từng byte bằng chỉ số. Cú pháp này được mô tả trong [CodeVisionAVR User Manual, mục Accessing the EEPROM](https://www.thierry-lequeu.fr/data/CodeVisionAVR-3-20-User-Manual.pdf). Không dùng API AVR-GCC hay struct phụ thuộc layout compiler.
+
+Mỗi bản ghi 13 byte: magic `53 47`, version `01`, sequence 16-bit little-endian, ba score 16-bit little-endian (EASY/NORMAL/HARD), CRC-8 của 11 byte đầu và byte commit `A5`. Giá trị hợp lệ phải là bội số 10 trong khoảng 0–1090. Khi khởi động, đọc hai slot, kiểm tra marker/version/CRC/score và chọn sequence mới hơn; nếu cả hai sai thì dùng ba kỷ lục bằng 0 **mà không ghi EEPROM**. Sequence có so sánh modulo 16-bit.
+
+Chỉ khi ván chuyển sang Game Over/Win và score vượt kỷ lục cấp độ đó, mã ghi slot còn lại: xóa commit, ghi 12 byte dữ liệu, ghi commit cuối, rồi đọc lại xác minh. Không ghi sau từng bước, khi Pause, hay liên tục trong màn hình kết thúc. Nếu ghi thất bại, cache RAM trở lại kỷ lục trước đó. Cách ghi hai slot giúp giữ bản ghi cũ khi mất nguồn giữa lúc ghi bản mới; không bảo đảm an toàn tuyệt đối trước lỗi ở cả hai slot hoặc lỗi ghi không được phát hiện. Một lần ghi EEPROM có thể tạm ngừng quét LED trong lúc ván đã kết thúc. Khi nạp firmware mới, kiểm tra lựa chọn **erase/program EEPROM** của programmer; file `.EEP` do CVAVR tạo cho dữ liệu khởi tạo không cần nạp vì các mảng không khởi tạo trong source.
+
+## Pin mapping giữ nguyên
+
+Theo `docs/so_do_chan_mach.jpeg`: Nokia DC/DIN/CLK/RST/CS = PG0/PG1/PG2/PG3/PG4, BL = PD7; keypad ROW1/2/3 = PC6/PE1/PD0, COL1/2/3 = PC4/PC5/PE0; LCD RS/RW/E/D4/D5/D6/D7 = PA0/PA1/PA2/PA3/PA4/PA5/PA6. Cụm LED **7SEG-CA** dùng Digit 1–4 = PF0/PF3/PF4/PF6; A/B/C/D/E/F/G/DP = PF1/PF5/PA7/PD1/PD2/PF2/PD3/PF7. PA7 dùng chung PORTA với LCD; không đổi wiring. Mức kích hoạt LED và hành vi ghi PORTA của `alcd.h` phụ thuộc cấu hình/board thực tế, đã được người dùng kiểm thử trong Prompt 4.
 
 ## CodeVisionAVR và Proteus
 
-1. Trên Windows 11, mở project CodeVisionAVR **đang chạy tốt**, chọn ATmega128 và giữ clock/cấu hình GLCD/Timer1 hiện tại. Project cần tám source: `main.c`, `drivers/display.c`, `drivers/keypad.c`, `drivers/timer.c`, **`drivers/led7seg.c`, `drivers/lcd1602.c`**, `game/snake_game.c`, `game/game_render.c`. Không thêm header như source và không thêm Nokia driver cũ. Các include hiện dùng đường dẫn tương đối từ file nguồn.
-2. `KEYPAD_TEST_MODE=0` (mặc định) để chạy game. Đặt thành `1` trong `board_config.h` hoặc project defines để kiểm tra 9 phím độc lập; sau đó build lại. Khi bật test mode, Nokia hiện phím, hàng/cột và số sự kiện nhấn.
-3. Trong **Project → Configure → C Compiler → Libraries → Alphanumeric LCD**, bật `alcd.h`, chọn 16 ký tự/dòng và gán `RS=PA0`, `RW/RD=PA1`, `E/EN=PA2`, `D4=PA3`, `D5=PA4`, `D6=PA5`, `D7=PA6`. Các API `lcd_init(16)`, `lcd_gotoxy`, `lcd_putchar` đã được đối chiếu với [manual CodeVisionAVR do HP InfoTech viết](https://www.thierry-lequeu.fr/data/CodeVisionAVR-3-20-User-Manual.pdf); cần kiểm tra phiên bản CVAVR đang cài có cấu hình được từng chân này, và kiểm tra `alcd.h` có ghi toàn PORTA/DDRA làm thay đổi PA7 hay không.
-4. Chạy **Project → Build All**. Chỉ khi CVAVR báo thành công mới lấy file Intel HEX từ đường dẫn output của project. Mã giai đoạn 4 chưa được biên dịch bằng CVAVR trong môi trường này.
-5. Trong Proteus, mở schematic gốc, gán HEX vào **Program File** của ATmega128, kiểm tra **Clock Frequency** khớp project, rồi chạy mô phỏng. Không cần sửa wiring.
+1. Mở project CVAVR đang chạy Prompt 4, giữ ATmega128, clock, cấu hình GLCD/ALCD và Timer1. Thêm **hai source mới** `game/game_menu.c` và `storage/highscore_eeprom.c`; tổng cộng **10 file `.c`**: `main.c`, `drivers/display.c`, `drivers/keypad.c`, `drivers/timer.c`, `drivers/led7seg.c`, `drivers/lcd1602.c`, `game/snake_game.c`, `game/game_render.c`, `game/game_menu.c`, `storage/highscore_eeprom.c`. Không thêm header như source. Các include dùng đường dẫn tương đối từ từng file.
+2. Đặt `KEYPAD_TEST_MODE`, `LED7SEG_TEST_MODE`, `LCD1602_TEST_MODE`, `LED7_LCD_TEST_MODE` bằng `0` để chạy game. Giữ ALCD 4-bit: RS=PA0, RW=PA1, E=PA2, D4–D7=PA3–PA6. Kiểm tra phiên bản `alcd.h` đang cài và cấu hình từng chân trước build.
+3. Chọn **Project → Build All**. Kiểm tra không có lỗi, ghi lại Flash/SRAM usage và đường dẫn file Intel HEX mà project xuất ra. Chỉ lấy HEX sau khi build CVAVR thành công; source Prompt 5 chưa được build bằng CVAVR trong môi trường này.
+4. Trong Proteus, mở schematic gốc, chọn ATmega128, gán HEX vào **Program File**, xác nhận **Clock Frequency** khớp project rồi chạy. Không thay đổi sơ đồ chân.
 
-### Checklist mô phỏng
+### Checklist Proteus
 
-1. Khởi động: ba đốt đúng vị trí, một thức ăn 3×3 không trùng thân, điểm logic bằng 0. Rắn tự đi mỗi 500 ms.
-2. Phím 2/4/6/8 đổi hướng hợp lệ; nhấn hướng ngược trực tiếp hoặc hai hướng nhanh trước một tick không làm quay 180°. Phím 5 Pause/Resume, không có bước dồn sau Resume.
-3. Dẫn đầu tới thức ăn: mỗi lần ăn dài thêm đúng một đốt, thức ăn cũ mất và thức ăn mới ở ô trống. Sau ba lần ăn: sáu đốt, điểm logic 30 và LED hiện `0030`.
-4. Đâm tường hoặc cắn thân: hiện `GAME OVER`, giữ điểm và dừng. Đi vào ô **đuôi vừa rời** khi không ăn phải hợp lệ; khi ăn thì đuôi vẫn được tính là chiếm chỗ.
-5. Nhấn 9 khi chạy/Pause/Game Over/Win: rắn về ba đốt, điểm 0, hướng RIGHT, thức ăn hợp lệ và đợi đủ 500 ms trước bước đầu. Giữ phím 9 không lặp Restart.
-6. Điều kiện Win ở 112 ô khó đạt bằng tay: dùng test harness logic kiểm soát dữ liệu hoặc một build thử riêng gần đầy lưới. Mong đợi `YOU WIN`, điểm cuối và không sinh thêm thức ăn.
-7. Hồi quy: Nokia, keypad, Timer1, khe 1 pixel giữa đốt, và các GPIO vẫn hoạt động như trước.
+1. Reset: Nokia hiện menu, EASY được chọn, LED `0000`, LCD `SELECT LEVEL`/`EASY BEST:0000`, rắn chưa chạy.
+2. Phím 8 chuyển EASY→NORMAL→HARD→EASY; phím 2 đi ngược; phím 5 bắt đầu. Giữ phím không làm menu nhảy nhiều lần.
+3. EASY/NORMAL/HARD lần lượt di chuyển mỗi 500/300/150 ms theo thời gian mô phỏng; LCD hiện đúng level. Kiểm tra các phím điều hướng, thức ăn, va chạm, Pause/Resume và LED score.
+4. Sau Game Over/Win: LCD hiện điểm cuối, Nokia hiện `9:RESTART` và `1:MENU`. Phím 9 giữ level và high score, reset score/rắn/mốc tick. Phím 1 về menu với level vừa chơi và high score tương ứng.
+5. Tạo kỷ lục EASY 50, rồi ván EASY 30 (không ghi), rồi EASY 80 (ghi); NORMAL/HARD không đổi. Reset MCU và kiểm tra giá trị được nạp từ EEPROM; kiểm tra cả trường hợp xóa EEPROM và bản ghi CRC sai. Phân biệt reset MCU với dừng/nạp lại mô phỏng vì Proteus có thể xử lý EEPROM khác board thật.
+6. Quan sát LCD, Nokia, LED cùng lúc, đặc biệt PA7 và độ nhấp nháy khi render/ghi EEPROM. Kiểm tra lại mọi chức năng Prompt 1–4.
 
-## Kết quả kiểm tra và giới hạn
+## Trạng thái kiểm tra
 
-Người dùng xác nhận Prompt 1–3 đã chạy trên CVAVR/Proteus. **Thay đổi Prompt 4 chưa được build bằng CodeVisionAVR, chưa mô phỏng Proteus và chưa chạy trên board thực**. Cần ghi Flash/SRAM usage từ báo cáo build trước khi nạp board. Kết quả kiểm tra tĩnh của mã mới không thay thế được các bước đó.
-
-## Tích hợp LED 7 đoạn và LCD 16×2
-
-Các net label dưới đây được đối chiếu với **sơ đồ chân chính thức** `docs/so_do_chan_mach.jpeg`; cực tính điện thực tế của mạch chọn digit/segment vẫn cần xác nhận trên Proteus. Snake chỉ điều khiển cụm **7SEG-CA**, không dùng 7SEG-CC.
-
-| 7SEG-CA | GPIO (chân vật lý) | 7SEG-CA | GPIO (chân vật lý) |
-|---|---|---|---|
-| Digit 1 | PF0 (61) | A | PF1 (60) |
-| Digit 2 | PF3 (58) | B | PF5 (56) |
-| Digit 3 | PF4 (57) | C | PA7 (44) |
-| Digit 4 | PF6 (55) | D | PD1 (26) |
-| DP | PF7 (54) | E | PD2 (27) |
-| F | PF2 (59) | G | PD3 (28) |
-
-PF6 là Digit 4 và PF7 là DP theo net label. LCD dùng RS=PA0 (51), RW=PA1 (50), E=PA2 (49), D4=PA3 (48), D5=PA4 (47), D6=PA5 (46), D7=PA6 (45). Không có chân trùng với Nokia/keypad; **PA7 và LCD cùng dùng Port A**. Driver LED dùng mặt nạ trên `PORTA`, `PORTD`, `PORTF` và `DDRx`; không dùng macro `PORTF.0` gây lỗi parser CVAVR. Trong main, các digit được tắt trước mỗi lần ghi `alcd.h`; driver khôi phục PA7 sau ghi. Vì quét LED chỉ diễn ra ở main, không có ISR LED chen giữa thao tác của ALCD. Chưa có bằng chứng phiên bản `alcd.h` đang cài bảo toàn PA7; kiểm tra đoạn C và LCD cùng lúc trên Proteus. Nếu thấy nhiễu, kiểm tra `PORTA`/`DDRA` bằng logic analyzer, đối chiếu file cấu hình thư viện CVAVR và điều chỉnh phần mềm theo wiring hiện tại. PF4–PF7 còn liên quan JTAG trên ATmega128; nếu LED tương ứng không sáng, kiểm tra fuse JTAGEN/cấu hình JTD trước khi kết luận sai mapping.
-
-Mặc định `LED7_DIGIT_ON_LEVEL=1`, `LED7_SEGMENT_ON_LEVEL=0` theo điều khiển CA trực tiếp. Đây là **giả thuyết mức kích hoạt cần xác minh** vì ảnh không cho thấy đầy đủ tầng transistor/đệm. Nếu các digit hoặc segment bị đảo, sửa đúng macro mức kích hoạt trong `board_config.h` sau khi đo tín hiệu, không đổi GPIO. `LED7_SCAN_MS=2` chuyển một digit mỗi 2 ms, tương ứng khoảng 125 Hz cho mỗi digit khi vòng lặp không bị chặn. Việc render Nokia và ghi từng ký tự LCD có thể làm tăng khoảng cách giữa hai lần quét; cần nhìn trực tiếp trên Proteus và board để đánh giá nhấp nháy. Mã không cấu hình lại Timer1 và không ghi LCD/GLCD trong ISR.
-
-### Chế độ kiểm thử
-
-Chỉ bật **một** macro test tại một thời điểm trong `config/board_config.h` hoặc project defines; build lại sau mỗi lần đổi:
-
-1. `LED7SEG_TEST_MODE=1`: LED lần lượt hiện `0000`, `1234`, `5678`, `9999`, mỗi mẫu 2 giây. Kiểm tra thứ tự digit, cực tính, đoạn C/DP, nhấp nháy và ghosting. Chế độ này không khởi tạo GLCD/LCD/game.
-2. `LCD1602_TEST_MODE=1`: LCD lần lượt hiện `SNAKE GAME`/`STATUS: READY`, `LEVEL: EASY`/`STATUS: PLAYING`, `SNAKE GAME`/`GAME PAUSED`, `GAME OVER`/`SCORE: 0050`, mỗi mẫu 2 giây. Nokia hiện `LCD TEST`. Kiểm tra 2 dòng và ký tự cũ được xóa bằng dấu cách.
-3. `LED7_LCD_TEST_MODE=1`: LCD giữ `SNAKE GAME`/`STATUS: READY`, LED luân phiên `1234`, `5678`, `9090`, mỗi mẫu 2 giây. Kiểm tra segment C ở PA7 và các ký tự LCD trong khi LED quét; dùng logic analyzer tại PA7, E và chân digit nếu có nhiễu.
-4. Đặt cả ba macro trên về `0` để chạy game và kiểm tra hai ngoại vi đồng thời. LED hiện score `0000` lúc khởi động/Restart, `0010` sau một lần ăn, giữ nguyên khi Pause/Game Over/Win. LCD hiện EASY/PLAYING, `GAME PAUSED` khi tạm dừng, hoặc trạng thái kết thúc cùng điểm số.
-
-Không bật `KEYPAD_TEST_MODE` đồng thời với hai macro trên. Điểm LED được giới hạn ở `9999` để không tràn hiển thị; game hiện chỉ có tối đa 1090 điểm. Các chuỗi LCD nằm trong Flash; bộ đệm trạng thái LCD dùng 64 byte SRAM và bộ đệm LED dùng 4 byte, ngoài dữ liệu game/GLCD hiện có.
+Đã chạy kiểm tra host C89 với mock EEPROM/ALCD/GLCD cho menu, chu kỳ, định dạng LCD, ghi kỷ lục theo level, không ghi điểm thấp hơn, đọc lại sau reset và khôi phục bản ghi cũ khi slot mới hỏng. Đây **không phải** build CodeVisionAVR hoặc mô phỏng Proteus. Cần người dùng chạy Build All, nạp HEX, kiểm tra EEPROM persistence và ghi lại Flash/SRAM usage trên Windows/Proteus.

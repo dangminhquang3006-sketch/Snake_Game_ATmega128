@@ -58,6 +58,7 @@ static KeyEvent event_from_position(unsigned char key)
 {
     /* Row-major key positions per docs/so_do_chan_ban_phim.jpeg. */
     switch (key) {
+    case 1: return KEY_MENU;
     case 2: return KEY_UP;
     case 8: return KEY_DOWN;
     case 4: return KEY_LEFT;

@@ -75,6 +75,10 @@
 #define GRID_COLS 14
 #define GRID_ROWS 8
 #define CELL_SIZE 6
-#define SNAKE_MOVE_MS 500UL
+#define GAME_MAX_SCORE ((GRID_COLS*GRID_ROWS-3u)*10u)
+/* Movement periods are selected by game_get_move_period(). */
+#define GAME_EASY_MOVE_MS 500u
+#define GAME_NORMAL_MOVE_MS 300u
+#define GAME_HARD_MOVE_MS 150u
 
 #endif

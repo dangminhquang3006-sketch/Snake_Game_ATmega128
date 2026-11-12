@@ -6,7 +6,8 @@
 static flash char paused_text[]="PAUSED";
 static flash char over_text[]="GAME OVER";
 static flash char win_text[]="YOU WIN";
-static flash char restart_text[]="PRESS 9";
+static flash char restart_text[]="9:RESTART";
+static flash char menu_text[]="1:MENU";
 static char score_text[]="SCORE: 0000";
 
 static void render_final_score(void)
@@ -17,7 +18,8 @@ static void render_final_score(void)
     score_text[9]=(char)('0'+(value/10)%10);
     score_text[10]=(char)('0'+value%10);
     display_text_ram(0,18,score_text);
-    display_text(0,34,restart_text);
+    display_text(0,31,restart_text);
+    display_text(0,40,menu_text);
 }
 
 void game_render(void)
