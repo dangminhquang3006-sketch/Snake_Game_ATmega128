@@ -34,9 +34,9 @@ static void eeprom_put(unsigned char slot, unsigned char index,
 
 static unsigned char crc8_add(unsigned char crc, unsigned char value)
 {
-    unsigned char bit;
+    unsigned char bit_index;
     crc ^= value;
-    for (bit=0; bit<8; ++bit) {
+    for (bit_index=0; bit_index<8; ++bit_index) {
         if (crc&0x80u) crc=(unsigned char)((crc<<1)^0x07u);
         else crc=(unsigned char)(crc<<1);
     }

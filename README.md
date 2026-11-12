@@ -45,7 +45,13 @@ CodeVisionAVR hỗ trợ biến toàn cục với thuộc tính `eeprom`; mã d�
 
 Mỗi bản ghi 13 byte: magic `53 47`, version `01`, sequence 16-bit little-endian, ba score 16-bit little-endian (EASY/NORMAL/HARD), CRC-8 của 11 byte đầu và byte commit `A5`. Giá trị hợp lệ phải là bội số 10 trong khoảng 0–1090. Khi khởi động, đọc hai slot, kiểm tra marker/version/CRC/score và chọn sequence mới hơn; nếu cả hai sai thì dùng ba kỷ lục bằng 0 **mà không ghi EEPROM**. Sequence có so sánh modulo 16-bit.
 
-Chỉ khi ván chuyển sang Game Over/Win và score vượt kỷ lục cấp độ đó, mã ghi slot còn lại: xóa commit, ghi 12 byte dữ liệu, ghi commit cuối, rồi đọc lại xác minh. Không ghi sau từng bước, khi Pause, hay liên tục trong màn hình kết thúc. Nếu ghi thất bại, cache RAM trở lại kỷ lục trước đó. Cách ghi hai slot giúp giữ bản ghi cũ khi mất nguồn giữa lúc ghi bản mới; không bảo đảm an toàn tuyệt đối trước lỗi ở cả hai slot hoặc lỗi ghi không được phát hiện. Một lần ghi EEPROM có thể tạm ngừng quét LED trong lúc ván đã kết thúc. Khi nạp firmware mới, kiểm tra lựa chọn **erase/program EEPROM** của programmer; file `.EEP` do CVAVR tạo cho dữ liệu khởi tạo không cần nạp vì các mảng không khởi tạo trong source.
+Chỉ khi ván chuyển sang Game Over/Win và score vượt kỷ lục cấp độ đó, mã ghi slot còn lại: xóa commit, ghi 12 byte dữ liệu, ghi commit cuối, rồi đọc lại xác minh. Không ghi sau từng bước, khi Pause, hay liên tục trong màn hình kết thúc. Nếu ghi thất bại, cache RAM trở lại kỷ lục trước đó. Cách ghi hai slot giúp giữ bản ghi cũ khi mất nguồn giữa lúc ghi bản mới; không bảo đảm an toàn tuyệt đối trước lỗi ở cả hai slot hoặc lỗi ghi không được phát hiện. Một lần ghi EEPROM có thể tạm ngừng quét LED trong lúc ván đã kết thúc.
+
+Khi cập nhật firmware, **không tự động nạp file `.eep`** của bản build mới nếu muốn giữ kỷ lục: CodeVisionAVR tạo `.eep` cho dữ liệu khởi tạo EEPROM, còn `.hex` là firmware Flash. Hai mảng EEPROM trong source không có giá trị khởi tạo; hãy kiểm tra nội dung `.eep` thực tế và các lựa chọn erase/program EEPROM của programmer hoặc Proteus trước khi nạp. Không được suy ra rằng chỉ nạp `.hex` thì EEPROM chắc chắn được giữ nếu thao tác nạp có chip erase.
+
+### Lưu ý cú pháp CodeVisionAVR
+
+`bit` là từ khóa riêng của CVAVR, không được dùng làm tên biến cục bộ. Hàm CRC dùng biến đếm `bit_index` kiểu `unsigned char`. Các cờ logic khác cũng dùng `unsigned char`; hai mảng `eeprom unsigned char` là biến toàn cục, không dùng struct hay API AVR-GCC. Khi sửa module EEPROM, kiểm tra tên biến trùng các từ khóa CVAVR trước khi Build All.
 
 ## Pin mapping giữ nguyên
 
