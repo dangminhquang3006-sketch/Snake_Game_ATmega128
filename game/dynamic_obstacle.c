@@ -67,8 +67,11 @@ static unsigned char remains_connected(unsigned char candidate_x,
                                         unsigned char candidate_y)
 {
     unsigned char start=0,end=0,cell,x,y,seen=0,free_count=0;
-    SnakePoint head=snake_segment(0);
-    SnakePoint food=snake_food();
+    SnakePoint head;
+    SnakePoint food;
+
+    head = snake_segment(0);
+    food = snake_food();
     for (y=0;y<GRID_ROWS;++y) {
         visited[y]=0;
         for (x=0;x<GRID_COLS;++x)
