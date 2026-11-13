@@ -9,6 +9,8 @@
 #include "game/game_render.h"
 #include "game/game_menu.h"
 #include "game/game_map.h"
+#include "game/game_mode.h"
+#include "game/bonus_food.h"
 #include "storage/highscore_eeprom.h"
 
 #if KEYPAD_TEST_MODE
@@ -42,12 +44,19 @@ static flash char lcd_test_nokia[]="LCD TEST";
 #endif
 
 #if !KEYPAD_TEST_MODE && !LED7SEG_TEST_MODE && !LCD1602_TEST_MODE && !LED7_LCD_TEST_MODE
-typedef enum { APP_STATE_LEVEL_SELECT=0, APP_STATE_MAP_SELECT, APP_STATE_GAME } AppState;
+typedef enum { APP_STATE_LEVEL_SELECT=0, APP_STATE_MAP_SELECT,
+               APP_STATE_MODE_SELECT, APP_STATE_GAME } AppState;
 static flash char invalid_map_text[]="INVALID MAP";
 
-static void lcd_for_state(SnakeState state, GameLevel level, MapId map)
+static void lcd_for_state(SnakeState state, GameLevel level, MapId map,
+                          GameMode mode)
 {
-    if (state==SNAKE_RUNNING) lcd1602_show_playing(level,map);
+    if (state==SNAKE_TIME_UP) lcd1602_show_time_up(snake_get_score());
+    else if (mode==MODE_TIME_ATTACK &&
+             (state==SNAKE_RUNNING || state==SNAKE_PAUSED))
+        lcd1602_show_time(game_mode_seconds_display(),
+                          (unsigned char)(state==SNAKE_PAUSED));
+    else if (state==SNAKE_RUNNING) lcd1602_show_playing(level,map);
     else if (state==SNAKE_PAUSED) lcd1602_show_paused(level,map);
     else lcd1602_show_result((unsigned char)(state==SNAKE_WIN),
                              snake_get_score());
@@ -64,12 +73,17 @@ void main(void)
     unsigned char test_phase=0;
 #else
     unsigned long last_move_ms;
+    unsigned long last_service_ms;
     unsigned int shown_score;
     unsigned int move_period_ms;
     GameLevel current_level;
     GameLevel previous_selection;
     MapId current_map;
     MapId previous_map;
+    GameMode current_mode;
+    GameMode previous_mode;
+    unsigned char shown_seconds;
+    unsigned char result_saved;
     AppState app_state;
     KeyEvent key;
     SnakeState before;
@@ -104,12 +118,15 @@ void main(void)
     game_menu_init(GAME_LEVEL_EASY);
     current_level=GAME_LEVEL_EASY;
     current_map=MAP_CLASSIC;
+    current_mode=MODE_STANDARD;
+    game_mode_menu_init(current_mode);
     game_map_menu_init(current_map);
     move_period_ms=game_get_move_period(current_level);
     app_state=APP_STATE_LEVEL_SELECT;
     shown_score=0;
     led7seg_set_number(0);
-    lcd1602_show_menu(current_level,highscore_get(current_level,MAP_CLASSIC));
+    lcd1602_show_menu(current_level,
+                     highscore_get(current_level,MAP_CLASSIC,MODE_STANDARD));
 #endif
 
     timer_init();
@@ -172,6 +189,9 @@ void main(void)
     }
 #else
     last_move_ms=timer_get_ms();
+    last_service_ms=last_move_ms;
+    shown_seconds=60u;
+    result_saved=0;
     led7seg_blank();
     game_menu_render();
     led7seg_resume();
@@ -181,6 +201,25 @@ void main(void)
         keypad_update(now_ms);
         redraw=0;
         update_lcd=0;
+        if (app_state==APP_STATE_GAME && snake_state()==SNAKE_RUNNING) {
+            if (game_mode_advance((unsigned long)(now_ms-last_service_ms))) {
+                snake_time_up();
+                redraw=1;
+                update_lcd=1;
+                led7seg_blank();
+                highscore_record_result(current_level,current_map,current_mode,
+                                        snake_get_score());
+                led7seg_resume();
+                result_saved=1;
+            } else if (bonus_food_advance((unsigned long)(now_ms-last_service_ms)))
+                redraw=1;
+            if (current_mode==MODE_TIME_ATTACK &&
+                shown_seconds!=game_mode_seconds_display()) {
+                shown_seconds=game_mode_seconds_display();
+                update_lcd=1;
+            }
+        }
+        last_service_ms=now_ms;
         key=keypad_get_event();
         if (app_state==APP_STATE_LEVEL_SELECT && key!=KEY_NONE) {
             previous_selection=game_menu_selected();
@@ -205,12 +244,7 @@ void main(void)
                 if (game_map_menu_handle_key(key)) {
                     if (game_map_select(game_map_menu_selected())) {
                         current_map=game_map_get_current();
-                        move_period_ms=game_get_move_period(current_level);
-                        snake_init();
-                        app_state=APP_STATE_GAME;
-                        last_move_ms=now_ms;
-                        shown_score=0;
-                        led7seg_set_number(0);
+                        app_state=APP_STATE_MODE_SELECT;
                         redraw=1;
                         update_lcd=1;
                     } else {
@@ -224,9 +258,39 @@ void main(void)
                     update_lcd=1;
                 }
             }
+        } else if (app_state==APP_STATE_MODE_SELECT && key!=KEY_NONE) {
+            if (key==KEY_MENU) {
+                app_state=APP_STATE_MAP_SELECT;
+                redraw=1;
+                update_lcd=1;
+            } else {
+                previous_mode=game_mode_menu_selected();
+                snake_mix_entropy(now_ms);
+                if (game_mode_menu_handle_key(key)) {
+                    current_mode=game_mode_menu_selected();
+                    if (game_mode_select(current_mode)) {
+                        game_mode_reset();
+                        move_period_ms=game_get_move_period(current_level);
+                        snake_init();
+                        app_state=APP_STATE_GAME;
+                        last_move_ms=now_ms;
+                        last_service_ms=now_ms;
+                        shown_seconds=60u;
+                        result_saved=0;
+                        shown_score=0;
+                        led7seg_set_number(0);
+                        redraw=1;
+                        update_lcd=1;
+                    }
+                } else if (previous_mode!=game_mode_menu_selected()) {
+                    redraw=1;
+                    update_lcd=1;
+                }
+            }
         } else if (app_state==APP_STATE_GAME) {
             if (key==KEY_MENU &&
-                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN)) {
+                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN ||
+                 snake_state()==SNAKE_TIME_UP)) {
                 app_state=APP_STATE_LEVEL_SELECT;
                 game_menu_init(current_level);
                 shown_score=0;
@@ -237,6 +301,12 @@ void main(void)
                 before=snake_state();
                 snake_mix_entropy(now_ms);
                 snake_handle_key(key);
+                if (key==KEY_RESTART) {
+                    game_mode_reset();
+                    shown_seconds=60u;
+                    result_saved=0;
+                    last_service_ms=now_ms;
+                }
                 if (key==KEY_RESTART || before!=snake_state()) {
                     redraw=1;
                     update_lcd=1;
@@ -248,12 +318,18 @@ void main(void)
                 (unsigned long)(now_ms-last_move_ms)>=move_period_ms) {
                 last_move_ms=now_ms;
                 redraw=snake_step();
-                if (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN) {
-                    led7seg_blank();
-                    highscore_record_result(current_level,current_map,snake_get_score());
-                    led7seg_resume();
+                if (snake_state()!=SNAKE_RUNNING) {
                     update_lcd=1;
                 }
+            }
+            if (app_state==APP_STATE_GAME && !result_saved &&
+                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN ||
+                 snake_state()==SNAKE_TIME_UP)) {
+                led7seg_blank();
+                highscore_record_result(current_level,current_map,current_mode,
+                                        snake_get_score());
+                led7seg_resume();
+                result_saved=1;
             }
             if (app_state==APP_STATE_GAME && shown_score!=snake_get_score()) {
                 shown_score=snake_get_score();
@@ -264,17 +340,24 @@ void main(void)
             led7seg_blank();
             if (app_state==APP_STATE_LEVEL_SELECT) game_menu_render();
             else if (app_state==APP_STATE_MAP_SELECT) game_map_menu_render(current_level);
+            else if (app_state==APP_STATE_MODE_SELECT) game_mode_menu_render();
             else game_render();
             led7seg_resume();
         }
         if (update_lcd) {
             if (app_state==APP_STATE_LEVEL_SELECT)
                 lcd1602_show_menu(game_menu_selected(),
-                                  highscore_get(game_menu_selected(),MAP_CLASSIC));
+                                  highscore_get(game_menu_selected(),MAP_CLASSIC,
+                                                MODE_STANDARD));
             else if (app_state==APP_STATE_MAP_SELECT)
                 lcd1602_show_map_menu(game_map_menu_selected(),
-                       highscore_get(current_level,game_map_menu_selected()));
-            else lcd_for_state(snake_state(),current_level,current_map);
+                       highscore_get(current_level,game_map_menu_selected(),
+                                     MODE_STANDARD));
+            else if (app_state==APP_STATE_MODE_SELECT)
+                lcd1602_show_mode_menu(game_mode_menu_selected(),
+                       highscore_get(current_level,current_map,
+                                     game_mode_menu_selected()));
+            else lcd_for_state(snake_state(),current_level,current_map,current_mode);
         }
         if (lcd1602_is_dirty()) {
             led7seg_blank();

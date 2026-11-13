@@ -4,6 +4,7 @@
 
 static GameLevel selected_level=GAME_LEVEL_EASY;
 static MapId selected_map=MAP_CLASSIC;
+static GameMode selected_mode=MODE_STANDARD;
 static flash char title_text[]="SNAKE GAME";
 static flash char easy_selected[] ="> EASY";
 static flash char easy_plain[]    ="  EASY";
@@ -22,6 +23,13 @@ static flash char pillars_selected[]="> PILLARS";
 static flash char pillars_plain[]="  PILLARS";
 static flash char labyrinth_selected[]="> LABYRINTH";
 static flash char labyrinth_plain[]="  LABYRINTH";
+static flash char mode_title[]="SELECT MODE";
+static flash char standard_selected[]="> STANDARD";
+static flash char standard_plain[]="  STANDARD";
+static flash char bonus_selected[]="> BONUS";
+static flash char bonus_plain[]="  BONUS";
+static flash char attack_selected[]="> TIME ATTACK";
+static flash char attack_plain[]="  TIME ATTACK";
 
 void game_menu_init(GameLevel selected)
 {
@@ -99,4 +107,36 @@ void game_map_menu_render(GameLevel level)
     else display_text(0,26,pillars_plain);
     if (selected_map==MAP_LABYRINTH) display_text(0,35,labyrinth_selected);
     else display_text(0,35,labyrinth_plain);
+}
+
+void game_mode_menu_init(GameMode selected)
+{
+    if ((unsigned int)selected>=MODE_COUNT) selected=MODE_STANDARD;
+    selected_mode=selected;
+}
+
+unsigned char game_mode_menu_handle_key(KeyEvent key)
+{
+    if (key==KEY_UP) {
+        if (selected_mode==MODE_STANDARD) selected_mode=MODE_TIME_ATTACK;
+        else selected_mode=(GameMode)(selected_mode-1);
+    } else if (key==KEY_DOWN) {
+        if (selected_mode==MODE_TIME_ATTACK) selected_mode=MODE_STANDARD;
+        else selected_mode=(GameMode)(selected_mode+1);
+    } else if (key==KEY_PAUSE) return 1;
+    return 0;
+}
+
+GameMode game_mode_menu_selected(void) { return selected_mode; }
+
+void game_mode_menu_render(void)
+{
+    display_clear();
+    display_text(0,0,mode_title);
+    if (selected_mode==MODE_STANDARD) display_text(0,12,standard_selected);
+    else display_text(0,12,standard_plain);
+    if (selected_mode==MODE_BONUS) display_text(0,22,bonus_selected);
+    else display_text(0,22,bonus_plain);
+    if (selected_mode==MODE_TIME_ATTACK) display_text(0,32,attack_selected);
+    else display_text(0,32,attack_plain);
 }

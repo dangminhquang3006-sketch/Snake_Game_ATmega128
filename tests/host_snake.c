@@ -141,6 +141,65 @@ int main(void)
     assert(snake_state()==SNAKE_WIN);
     assert(snake_length()==112 && snake_get_score()==1090);
     assert(snake_step()==0);
-    puts("PASS: snake init, turns, food, pause, collisions, tail, win");
+    assert(game_mode_select(MODE_BONUS));
+    snake_init();
+    for (i=0;i<3u;++i) {
+        segments[0].x=7; segments[0].y=4;
+        segments[1].x=6; segments[1].y=4;
+        segments[2].x=5; segments[2].y=4;
+        current_length=3;
+        direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+        food.x=8; food.y=4;
+        assert(snake_step()==1);
+    }
+    assert(normal_foods_eaten==3u && bonus_food_active());
+    head=bonus_food_position();
+    assert(!game_map_is_blocked(head.x,head.y));
+    assert(!(head.x==food.x && head.y==food.y));
+    assert(bonus_food_remaining_ms()==5000UL);
+    assert(!bonus_food_advance(2500UL));
+    assert(bonus_food_remaining_ms()==2500UL);
+    assert(bonus_food_advance(2500UL) && !bonus_food_active());
+    segments[0].x=7; segments[0].y=4;
+    segments[1].x=6; segments[1].y=4;
+    segments[2].x=5; segments[2].y=4;
+    current_length=3; direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+    food.x=0; food.y=0;
+    head.x=8; head.y=4; bonus_food_spawn(head);
+    score=30;
+    assert(snake_step()==1);
+    assert(score==60u && current_length==3u && !bonus_food_active());
+    /* A live bonus cannot consume the sole cell needed by normal food. */
+    current_length=111u;
+    segments[0].x=0; segments[0].y=0;
+    i=1;
+    for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
+        if (!(y==0 && (x==0 || x==1))) {
+            segments[i].x=x; segments[i].y=y; ++i;
+        }
+    head.x=1; head.y=0; bonus_food_spawn(head);
+    place_food();
+    assert(!bonus_food_active());
+    assert(food.x==1 && food.y==0);
+    assert(game_mode_select(MODE_TIME_ATTACK));
+    game_mode_reset();
+    assert(game_mode_seconds_display()==60u);
+    assert(!game_mode_advance(1UL) && game_mode_seconds_display()==60u);
+    assert(!game_mode_advance(999UL) && game_mode_seconds_display()==59u);
+    snake_init();
+    assert(game_mode_advance(59000UL));
+    snake_time_up();
+    assert(snake_state()==SNAKE_TIME_UP && snake_step()==0);
+    assert(game_mode_remaining_ms()==0UL);
+    snake_handle_key(KEY_RESTART);
+    game_mode_reset();
+    assert(snake_state()==SNAKE_RUNNING && !bonus_food_active());
+    assert(game_mode_seconds_display()==60u);
+    assert(game_mode_select(MODE_STANDARD));
+    snake_init();
+    normal_foods_eaten=2u;
+    food.x=8; food.y=4;
+    assert(snake_step()==1 && !bonus_food_active());
+    puts("PASS: snake/maps, bonus spawn/expiry/collection, countdown, time up");
     return 0;
 }
