@@ -26,6 +26,10 @@ static flash char mode_prefix[]="MODE:";
 static flash char standard_name[]="STANDARD";
 static flash char bonus_name[]="BONUS";
 static flash char attack_name[]="TIME ATTACK";
+static flash char survival_name[]="SURVIVAL";
+static flash char survival_paused[]="SURVIVAL PAUSED";
+static flash char obst_playing[]="OBST:00 PLAYING";
+static flash char obst_paused[]="OBSTACLES: 00";
 static flash char time_prefix[]="TIME: 0";
 static flash char time_up_line[]="TIME UP!";
 
@@ -121,6 +125,7 @@ void lcd1602_show_mode_menu(GameMode mode, unsigned int best)
     copy_flash(0,mode_prefix);
     if (mode==MODE_BONUS) copy_flash(5,bonus_name);
     else if (mode==MODE_TIME_ATTACK) copy_flash(5,attack_name);
+    else if (mode==MODE_SURVIVAL) copy_flash(5,survival_name);
     else copy_flash(5,standard_name);
     copy_flash(16,best_prefix);
     put_four_digits(22,best);
@@ -167,6 +172,25 @@ void lcd1602_show_time_up(unsigned int score)
     copy_flash(0,time_up_line);
     copy_flash(16,score_prefix);
     put_four_digits(23,score);
+}
+
+void lcd1602_show_survival(GameLevel level,unsigned char obstacles,
+                           unsigned char paused)
+{
+    spaces();
+    if (paused) {
+        copy_flash(0,survival_paused);
+        copy_flash(16,obst_paused);
+        desired[27]=(char)('0'+obstacles/10u);
+        desired[28]=(char)('0'+obstacles%10u);
+    } else {
+        copy_flash(0,survival_name);
+        desired[8]=' ';
+        copy_level(9,level);
+        copy_flash(16,obst_playing);
+        desired[21]=(char)('0'+obstacles/10u);
+        desired[22]=(char)('0'+obstacles%10u);
+    }
 }
 
 void lcd1602_show_test_ready(void)

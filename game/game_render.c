@@ -4,6 +4,7 @@
 #include "game_render.h"
 #include "game_map.h"
 #include "bonus_food.h"
+#include "dynamic_obstacle.h"
 
 static flash char paused_text[]="PAUSED";
 static flash char over_text[]="GAME OVER";
@@ -27,7 +28,7 @@ static void render_final_score(void)
 
 void game_render(void)
 {
-    unsigned char i,x,y;
+    unsigned char i,x,y,j;
     SnakePoint point;
     SnakeState state=snake_state();
     display_clear();
@@ -50,6 +51,15 @@ void game_render(void)
         if (game_map_is_blocked(x,y))
             display_rect((unsigned char)(x*CELL_SIZE),
                          (unsigned char)(y*CELL_SIZE),CELL_SIZE,CELL_SIZE);
+    for (i=0;i<dynamic_obstacle_get_count();++i) {
+        point=dynamic_obstacle_point(i);
+        for (j=0;j<5u;++j) {
+            display_fill_rect((unsigned char)(point.x*CELL_SIZE+j),
+                              (unsigned char)(point.y*CELL_SIZE+j),1,1);
+            display_fill_rect((unsigned char)(point.x*CELL_SIZE+4u-j),
+                              (unsigned char)(point.y*CELL_SIZE+j),1,1);
+        }
+    }
     point=snake_food();
     display_fill_rect((unsigned char)(point.x*CELL_SIZE+1),
                       (unsigned char)(point.y*CELL_SIZE+1),3,3);

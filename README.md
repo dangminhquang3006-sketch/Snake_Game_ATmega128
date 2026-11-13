@@ -1,58 +1,65 @@
-# Snake Game ATmega128 — Prompt 8
+# Snake Game ATmega128 — Prompt 9
 
-Firmware Embedded C cho CodeVisionAVR trên ATmega128. Sửa source bằng VS Code trên Ubuntu; Build All và tạo HEX bằng CodeVisionAVR trên Windows; kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của source Prompt 8.
+Firmware Embedded C cho CodeVisionAVR. Source được sửa trên Ubuntu; Build All và tạo HEX trên Windows bằng CodeVisionAVR; sau đó kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của đúng source Prompt 9.
 
-## Game Mode và menu
+## Game Mode và điều khiển
 
-Luồng: **SELECT LEVEL → SELECT MAP → SELECT MODE → GAME**. Trong mỗi menu, phím 2/8 chuyển lựa chọn vòng, phím 5 xác nhận; tại SELECT MODE, phím 1 quay lại SELECT MAP. Sau GAME_OVER, WIN hoặc TIME_UP, phím 9 Restart cùng Level, Map, Mode; phím 1 về SELECT LEVEL. Level EASY/NORMAL/HARD vẫn đi mỗi 500/300/150 ms. Map CLASSIC/PILLARS/LABYRINTH vẫn có 112/104/100 ô chơi được.
+Luồng menu: **SELECT LEVEL → SELECT MAP → SELECT MODE → GAME**. Phím 2/8 đổi lựa chọn, 5 xác nhận; phím 1 tại menu Mode trở về Map. Sau GAME_OVER, WIN hoặc TIME_UP, 9 Restart giữ Level/Map/Mode, 1 về Level. EASY/NORMAL/HARD vẫn di chuyển mỗi 500/300/150 ms. CLASSIC/PILLARS/LABYRINTH vẫn giữ layout tường cố định và lần lượt có 112/104/100 ô ban đầu.
 
-| Mode | Thức ăn thường | Bonus Food | Giới hạn lượt |
-|---|---|---|---|
-| STANDARD | +10 điểm, +1 đốt | Không | Không |
-| BONUS | +10 điểm, +1 đốt | +30 điểm, không tăng đốt | Không |
-| TIME_ATTACK | +10 điểm, +1 đốt | +30 điểm, không tăng đốt | 60 giây RUNNING |
-
-Bonus xuất hiện ở mốc mỗi ba thức ăn thường, tồn tại 5000 ms thời gian RUNNING, tối đa một bonus. Mốc đạt khi bonus còn hoạt động được bỏ qua, không cộng dồn. Vị trí được chọn bằng hai lượt duyệt ô hợp lệ, loại tường, rắn và thức ăn thường; nếu không còn ô thì bỏ qua. Nếu bonus chiếm ô trống cuối cần cho thức ăn thường, bonus biến mất để thức ăn thường được đặt. Khi Pause, đồng hồ lượt và bonus đều dừng; sau Resume tiếp tục từ giá trị còn lại. Bonus hết hạn ở đầu vòng cập nhật sẽ bị xóa trước khi xét bước di chuyển. Khi đồng hồ về 0, TIME_UP được xử lý trước bước di chuyển; điểm cuối được giữ và xét kỷ lục.
-
-Nokia vẽ rắn đặc 5×5, thức ăn thường đặc 3×3, bonus khung rỗng 5×5 và vật cản viền 6×6. Màn SELECT MODE hiển thị đủ `STANDARD`, `BONUS`, `TIME ATTACK` trong 84×48; dòng dài nhất 13 ký tự ×6=78 pixel. LCD hiển thị kỷ lục của Mode đang chọn. TIME_ATTACK hiển thị `TIME: 01:00` đến `TIME: 00:00`, chỉ thay đổi nội dung khi số giây hiển thị đổi; khi hết giờ hiện `TIME UP!` và score. LED 7 đoạn CA luôn hiển thị score.
-
-## Source
-
-| Module | Vai trò |
+| Mode | Luật chính |
 |---|---|
-| `main.c` | AppState bốn màn hình; cập nhật elapsed trước bước rắn; lưu kết quả một lần |
-| `game/game_menu.c/.h` | Menu Level, Map, Mode |
-| `game/game_map.c/.h` | Bitmask map Flash, xác thực và truy vấn vật cản |
-| `game/game_mode.c/.h` | Mode hiện tại, countdown 60 giây và cấu hình thời gian/điểm Bonus |
-| `game/bonus_food.c/.h` | Vị trí, trạng thái và thời gian còn lại của Bonus |
-| `game/snake_game.c/.h` | Rắn, thức ăn, va chạm, điểm, WIN và TIME_UP |
-| `game/game_render.c/.h` | Nokia gameplay và màn hình kết thúc |
-| `storage/highscore_eeprom.c/.h` | 27 kỷ lục Mode × Level × Map; đọc v1/v2, ghi v3 |
-| `drivers/lcd1602.c/.h` | Hiển thị menu Mode, countdown, TIME_UP bằng `alcd.h` |
+| STANDARD | Thức ăn +10 điểm, +1 đốt; không Bonus, không giới hạn giờ |
+| BONUS | Như STANDARD; Bonus +30 điểm, không tăng đốt, tồn tại 5 giây RUNNING |
+| TIME_ATTACK | Có Bonus; 60 giây RUNNING, hết giờ chuyển TIME_UP |
+| SURVIVAL | Thức ăn +10 điểm, +1 đốt; không Bonus; thử thêm một vật cản mỗi 20 giây RUNNING, tối đa 8 |
 
-Driver `display`, `keypad`, `timer`, `led7seg` và pin mapping không đổi. Timer1 vẫn tạo tick 1 ms; `timer_get_ms()` đọc biến ISR 32 bit nguyên tử. Main lấy hiệu `unsigned long` để chịu tràn tick, cộng thời gian chỉ khi `SNAKE_RUNNING`; không dùng delay chặn hoặc LCD/GLCD/EEPROM trong ISR. Không có framebuffer Nokia thứ hai.
+Timer1 vẫn tạo tick 1 ms. `timer_get_ms()` đọc tick ISR 32 bit nguyên tử; main dùng hiệu `unsigned long` để chịu tràn. Pause dừng thời gian Bonus, Time Attack và lịch sinh vật cản; Resume không dồn bước. Trong SURVIVAL, bước rắn được xử lý trước, rồi mới thử sinh vật cản nếu game còn RUNNING. Restart xóa tất cả vật cản động và đặt lại lịch 20 giây.
 
-## EEPROM v1 → v2 → v3
+## Dynamic Obstacles
 
-| Phiên bản | Dữ liệu | Slot A / B | Kích thước |
-|---|---|---|---:|
-| v1 | 3 Level của CLASSIC + STANDARD | Hai biến `hs_slot_a/b` cũ, địa chỉ do linker cấp | 13 byte/slot |
-| v2 | 9 Level × Map của STANDARD | `0x0100` / `0x0120` | 25 byte/slot |
+[dynamic_obstacle.c](game/dynamic_obstacle.c) lưu vật cản bằng **8 bitmask 16 bit** (16 byte SRAM); tối đa 8 bit được bật. Khi đến mốc 20 giây RUNNING, module thử tối đa 112 ô theo thứ tự xoay từ chỉ số giả ngẫu nhiên của Snake; mỗi lần cập nhật thêm tối đa một vật cản, nếu không có ứng viên thì bỏ qua mốc đó.
+
+Ứng viên bị loại nếu ngoài lưới, trùng tường cố định/vật cản động/rắn/thức ăn thường/Bonus, cách đầu rắn Manhattan ≤2 hoặc trùng ô đầu sẽ đi tới theo hướng đã xếp hàng. BFS từ đầu rắn dùng hàng đợi tĩnh 112 byte và bitmask visited 16 byte; ứng viên chỉ được nhận nếu mọi ô không thuộc tường vẫn liên thông và thức ăn nằm trong vùng đó. BFS bỏ qua thân rắn vì thân di chuyển; phép kiểm tra này **không bảo đảm** người chơi luôn có đường thoát ở mọi tình huống. BFS chỉ chạy khi xét ứng viên sinh vật cản, không ở ISR hay mỗi frame.
+
+Rắn kiểm tra va chạm tường động trước khi sửa mảng thân. Thuật toán thức ăn hai lượt duyệt loại cả vật cản tĩnh và động. Số ô chơi được hiện tại bằng số ô trống của map gốc trừ số vật cản động; WIN dựa trên số này sau khi ăn, không dùng hằng 112. Vì ứng viên không được đặt lên rắn hoặc thức ăn, việc thêm vật cản không tự tạo WIN giả.
+
+Nokia vẽ tường tĩnh bằng viền 6×6, vật cản động bằng dấu X 5×5, thức ăn thường đặc 3×3, Bonus khung 5×5, rắn đặc 5×5. Menu Mode có bốn dòng ở y=8/18/28/38; dòng dài nhất `> TIME ATTACK` rộng 78 pixel, nằm trong 84×48. LCD SURVIVAL hiển thị `SURVIVAL HARD` / `OBST:03 PLAYING` hoặc `SURVIVAL PAUSED` / `OBSTACLES: 03`; LED CA vẫn hiển thị điểm. Không có framebuffer Nokia thứ hai.
+
+## EEPROM v1 → v4
+
+| Phiên bản | Kỷ lục | Vùng slot A / B | Kích thước |
+|---|---:|---|---:|
+| v1 | 3 Level | Hai biến `hs_slot_a/b` cũ, địa chỉ do linker cấp | 13 byte/slot |
+| v2 | 9 Level × Map | `0x0100` / `0x0120` | 25 byte/slot |
 | v3 | 27 Mode × Level × Map | `0x0200` / `0x0240` | 61 byte/slot |
+| v4 | 36 Mode × Level × Map | `0x0300` / `0x0350` | 79 byte/slot |
 
-V3 dùng `index=mode*9+level*3+map`. Mỗi record gồm magic `53 47`, version `03`, sequence 16 bit LE, 27 score 16 bit LE, CRC-8 tại byte 59 và commit `A5` tại byte 60. Khi khởi động, ưu tiên v3 hợp lệ mới nhất; nếu chưa có v3, 9 score v2 được đưa vào STANDARD; nếu chỉ có v1, ba score được đưa vào STANDARD + CLASSIC. BONUS/TIME_ATTACK chưa có dữ liệu bắt đầu bằng 0 trong RAM. Không ghi EEPROM khi khởi động. Khi kết thúc lượt, chỉ score cao hơn mới được ghi vào slot v3 không hoạt động: xóa commit, ghi dữ liệu và CRC, ghi commit cuối, đọc lại xác minh. V1 và v2 không bị ghi bởi firmware mới.
+Giá trị Mode cũ giữ nguyên: STANDARD=0, BONUS=1, TIME_ATTACK=2; SURVIVAL=3. Chỉ số cache và record v4: `mode*9 + level*3 + map`, nên 27 kỷ lục v3 nằm ở 27 vị trí đầu. Record v4 có magic `53 47`, version `04`, sequence LE, 36 score LE, CRC-8 byte 77 và commit `A5` byte 78. Khởi động ưu tiên v4 hợp lệ mới nhất; nếu chưa có, đọc v3/v2/v1 và ánh xạ như các phiên bản trước, đặt 9 kỷ lục SURVIVAL bằng 0. Khởi động không ghi EEPROM. Chỉ kỷ lục mới lúc GAME_OVER, WIN hoặc TIME_UP mới được ghi vào slot v4 không hoạt động, commit ghi cuối và đọc lại xác minh. V1/v2/v3 không bị ghi.
 
-**Trước khi nạp lên board có kỷ lục:** xác nhận địa chỉ thực tế của hai biến v1 trong EEPROM memory map của đúng project CodeVisionAVR, bảo đảm chúng không chồng `0x0100–0x0138` hoặc `0x0200–0x027C`; source v1 không gán địa chỉ cố định. Sao lưu EEPROM và kiểm tra `.eep`, chip erase, fuse EESAVE. Cú pháp địa chỉ `eeprom ... @0x0200` thuộc [CodeVisionAVR User Manual](https://www.thierry-lequeu.fr/data/CodeVisionAVR-3-20-User-Manual.pdf); cần Build All với phiên bản compiler trên Windows để xác nhận thực tế.
+**Trước khi nạp lên board có kỷ lục:** kiểm tra EEPROM memory map của đúng project CodeVisionAVR, đặc biệt địa chỉ thực tế của hai biến v1 không có `@`. Xác nhận không chồng v2 (`0x0100–0x0138`), v3 (`0x0200–0x027C`) hoặc v4 (`0x0300–0x039E`). Sao lưu EEPROM; kiểm tra `.eep`, chip erase và EESAVE. Địa chỉ v4 dùng cú pháp `eeprom ... @0x0300` của CodeVisionAVR, nhưng phải xác nhận bằng Build All trên máy Windows đang dùng.
 
-## Build All và kiểm thử Proteus
+## Cấu trúc source và Build All
 
-1. Mở project CVAVR ATmega128 đang chạy Prompt 7. Thêm **hai source mới** `game/game_mode.c`, `game/bonus_food.c`; tổng cộng 13 file `.c` gồm `main.c`, 5 driver (`display`, `keypad`, `timer`, `led7seg`, `lcd1602`), 6 game (`snake_game`, `game_render`, `game_menu`, `game_map`, `game_mode`, `bonus_food`) và `storage/highscore_eeprom.c`. Không thêm `tests/` hoặc mock vào project. Giữ clock, GLCD PCD8544, font `font5x7` và ALCD 4 bit như cũ.
-2. Đặt bốn macro chế độ test ngoại vi bằng 0. Chạy **Project → Build All**; kiểm tra lỗi/warning, EEPROM memory map, SRAM/Flash usage và đường dẫn HEX. Chỉ dùng HEX được tạo từ build thành công.
-3. Trong Proteus, mở schematic gốc, gán HEX mới vào Program File của ATmega128, kiểm tra Clock Frequency. Thử đủ ba Mode trên mỗi Map/Level: menu 2/8/5/1; STANDARD không bonus; BONUS xuất hiện sau ba mồi, +30 không tăng đốt, hết hạn sau 5 giây RUNNING; Pause trên 5 giây vẫn giữ bonus. TIME_ATTACK bắt đầu 01:00, dừng khi Pause, TIME_UP ở 00:00 trước bước rắn, Restart đặt lại 01:00.
-4. Kiểm tra va chạm tường/thân/vật cản, WIN theo map, LCD, LED và hồi quy Prompt 1–7. Kiểm tra EEPROM với image v1 rồi v2, kỷ lục v3 trên nhiều tổ hợp, reset MCU, CRC lỗi và commit chưa hoàn tất. Phân biệt reset MCU với nạp lại image EEPROM trong Proteus.
+| Module | Trách nhiệm |
+|---|---|
+| `main.c` | AppState, thời gian RUNNING, thứ tự di chuyển rồi sinh vật cản, lưu kỷ lục một lần |
+| `game/game_menu.c/.h` | Level, Map và bốn Mode |
+| `game/game_map.c/.h` | Layout tường cố định trong Flash |
+| `game/game_mode.c/.h` | Mode hiện tại, countdown Time Attack và hằng số thời gian |
+| `game/dynamic_obstacle.c/.h` | Lịch 20 giây, bitmask tường động, vùng an toàn, BFS |
+| `game/snake_game.c/.h` | Rắn, thức ăn, Bonus, va chạm và WIN |
+| `game/game_render.c/.h` | Nokia và ký hiệu vật cản động |
+| `storage/highscore_eeprom.c/.h` | Migration v1–v3 và 36 kỷ lục v4 |
+| `drivers/lcd1602.c/.h` | Dòng SURVIVAL/số vật cản; chỉ ghi ký tự đổi |
 
-`sh tests/run_host_validation.sh` chạy các bài kiểm tra C89 bằng mock trên Ubuntu. Kết quả host không chứng minh firmware đã biên dịch bằng CodeVisionAVR hoặc chạy Proteus/board. Báo cáo [giai đoạn 6](docs/final_validation_report.md) là mốc kiểm định của bản base.
+Driver GPIO/GLCD/keypad/LED/Timer1 và pin mapping giữ nguyên. Mở project CodeVisionAVR ATmega128 của Prompt 8, thêm **một source mới** `game/dynamic_obstacle.c` (tổng 14 file `.c`). Giữ clock, cấu hình `glcd.h` PCD8544/font `font5x7` và `alcd.h` 4 bit. Không thêm `tests/` hoặc mock vào project. Đặt mọi macro test ngoại vi về 0, chạy **Project → Build All**, kiểm tra lỗi/warning, EEPROM memory map, SRAM/Flash/stack và đường dẫn Intel HEX. Không dùng HEX cũ nếu build mới chưa đạt.
 
-## Phần cứng giữ nguyên
+## Kiểm thử Proteus
 
-Nokia DC/DIN/CLK/RST/CS=PG0/PG1/PG2/PG3/PG4, BL=PD7. Keypad ROW1/2/3=PC6/PE1/PD0, COL1/2/3=PC4/PC5/PE0. LCD RS/RW/E/D4–D7=PA0/PA1/PA2/PA3–PA6. LED CA digit 1–4=PF0/PF3/PF4/PF6; segment A/B/C/D/E/F/G/DP=PF1/PF5/PA7/PD1/PD2/PF2/PD3/PF7. Clock 16 MHz là cấu hình dự kiến; đối chiếu project, Proteus và board.
+1. Mở schematic gốc; gán HEX mới vào Program File ATmega128; kiểm tra Clock Frequency khớp CVAVR. Không đổi dây hoặc chân GPIO.
+2. Chọn SURVIVAL trên từng Map và Level. Xác nhận lúc Start không có tường động; sau 20/40/60 giây RUNNING có tối đa một lần thử sinh mỗi mốc, không quá 8. Pause trước mốc, chờ rồi Resume: lịch vẫn tiếp tục từ thời gian RUNNING trước đó.
+3. Kiểm tra tường không đè rắn/thức ăn, không ở gần đầu hoặc ngay phía trước, không chia cắt vùng ô trống; đâm tường động phải GAME_OVER. Kiểm tra thức ăn không nằm trên tường và WIN dùng sức chứa đã giảm.
+4. Restart xóa tường và đặt lại 20 giây; menu Mode vẫn có STANDARD/BONUS/TIME_ATTACK, các Mode cũ không có tường động. Kiểm tra Nokia, LCD và LED cùng lúc, nhất là HARD + LABYRINTH + SURVIVAL.
+5. Sao lưu image EEPROM. Thử đọc v3 có 27 kỷ lục, xác nhận SURVIVAL=0; tạo kỷ lục mới ở các Mode, reset MCU, kiểm tra giữ dữ liệu. Thử một slot CRC lỗi/commit chưa hoàn tất. Phân biệt reset MCU với việc Proteus nạp lại EEPROM image.
+
+`sh tests/run_host_validation.sh` kiểm tra logic C89 bằng mock. Test host không tạo HEX và không thay thế CodeVisionAVR, Proteus hay board thực. GPIO: Nokia PG0–PG4/PD7; keypad PC6/PE1/PD0 và PC4/PC5/PE0; LCD PA0–PA6; LED CA PF0/PF3/PF4/PF6 và các segment theo [board_config.h](config/board_config.h). Clock 16 MHz vẫn cần đối chiếu project và board.

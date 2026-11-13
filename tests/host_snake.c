@@ -200,6 +200,58 @@ int main(void)
     normal_foods_eaten=2u;
     food.x=8; food.y=4;
     assert(snake_step()==1 && !bonus_food_active());
-    puts("PASS: snake/maps, bonus spawn/expiry/collection, countdown, time up");
+    assert(!dynamic_obstacle_update(20000UL) && dynamic_obstacle_get_count()==0u);
+    assert(game_mode_select(MODE_SURVIVAL));
+    assert(game_map_select(MAP_PILLARS));
+    snake_init();
+    assert(dynamic_obstacle_update(20000UL));
+    assert(dynamic_obstacle_playable_cells()==103u);
+    assert(game_map_select(MAP_LABYRINTH));
+    snake_init();
+    assert(dynamic_obstacle_update(20000UL));
+    assert(dynamic_obstacle_playable_cells()==99u);
+    assert(game_map_select(MAP_CLASSIC));
+    snake_init();
+    assert(dynamic_obstacle_get_count()==0u);
+    assert(!dynamic_obstacle_candidate_valid(7,4));
+    assert(!dynamic_obstacle_candidate_valid(food.x,food.y));
+    assert(!dynamic_obstacle_update(19999UL));
+    assert(dynamic_obstacle_get_count()==0u);
+    assert(dynamic_obstacle_update(1UL));
+    assert(dynamic_obstacle_get_count()==1u);
+    head=dynamic_obstacle_point(0);
+    assert(dynamic_obstacle_is_blocked(head.x,head.y));
+    assert(!(head.x==food.x && head.y==food.y));
+    assert(dynamic_obstacle_playable_cells()==111u);
+    for (i=0;i<40u;++i) { place_food(); check_food();
+        assert(!dynamic_obstacle_is_blocked(food.x,food.y)); }
+    snake_handle_key(KEY_PAUSE);
+    assert(!dynamic_obstacle_update(60000UL));
+    assert(dynamic_obstacle_get_count()==1u);
+    snake_handle_key(KEY_PAUSE);
+    for (i=0;i<20u;++i) dynamic_obstacle_update(20000UL);
+    assert(dynamic_obstacle_get_count()==DYNAMIC_OBSTACLE_MAX_COUNT);
+    assert(!dynamic_obstacle_update(20000UL));
+    assert(dynamic_obstacle_playable_cells()==
+           (unsigned char)(112u-dynamic_obstacle_get_count()));
+    head=dynamic_obstacle_point(0);
+    food.x=13; food.y=7;
+    current_length=3;
+    if (head.x>0u) {
+        segments[0].x=(unsigned char)(head.x-1u); segments[0].y=head.y;
+        direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+    } else {
+        segments[0].x=1u; segments[0].y=head.y;
+        direction=DIR_LEFT; next_direction=DIR_LEFT;
+    }
+    head=segments[0];
+    assert(snake_step()==1 && snake_state()==SNAKE_GAME_OVER);
+    assert(segments[0].x==head.x && segments[0].y==head.y);
+    snake_handle_key(KEY_RESTART);
+    assert(dynamic_obstacle_get_count()==0u && snake_get_score()==0u);
+    normal_foods_eaten=2u;
+    food.x=8; food.y=4;
+    assert(snake_step()==1 && !bonus_food_active());
+    puts("PASS: snake/maps, bonus/time attack, survival obstacles and restart");
     return 0;
 }

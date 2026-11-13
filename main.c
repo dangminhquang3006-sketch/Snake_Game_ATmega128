@@ -11,6 +11,7 @@
 #include "game/game_map.h"
 #include "game/game_mode.h"
 #include "game/bonus_food.h"
+#include "game/dynamic_obstacle.h"
 #include "storage/highscore_eeprom.h"
 
 #if KEYPAD_TEST_MODE
@@ -52,6 +53,10 @@ static void lcd_for_state(SnakeState state, GameLevel level, MapId map,
                           GameMode mode)
 {
     if (state==SNAKE_TIME_UP) lcd1602_show_time_up(snake_get_score());
+    else if (mode==MODE_SURVIVAL &&
+             (state==SNAKE_RUNNING || state==SNAKE_PAUSED))
+        lcd1602_show_survival(level,dynamic_obstacle_get_count(),
+                              (unsigned char)(state==SNAKE_PAUSED));
     else if (mode==MODE_TIME_ATTACK &&
              (state==SNAKE_RUNNING || state==SNAKE_PAUSED))
         lcd1602_show_time(game_mode_seconds_display(),
@@ -74,6 +79,7 @@ void main(void)
 #else
     unsigned long last_move_ms;
     unsigned long last_service_ms;
+    unsigned long running_elapsed_ms;
     unsigned int shown_score;
     unsigned int move_period_ms;
     GameLevel current_level;
@@ -201,8 +207,10 @@ void main(void)
         keypad_update(now_ms);
         redraw=0;
         update_lcd=0;
+        running_elapsed_ms=0;
         if (app_state==APP_STATE_GAME && snake_state()==SNAKE_RUNNING) {
-            if (game_mode_advance((unsigned long)(now_ms-last_service_ms))) {
+            running_elapsed_ms=(unsigned long)(now_ms-last_service_ms);
+            if (game_mode_advance(running_elapsed_ms)) {
                 snake_time_up();
                 redraw=1;
                 update_lcd=1;
@@ -211,7 +219,7 @@ void main(void)
                                         snake_get_score());
                 led7seg_resume();
                 result_saved=1;
-            } else if (bonus_food_advance((unsigned long)(now_ms-last_service_ms)))
+            } else if (bonus_food_advance(running_elapsed_ms))
                 redraw=1;
             if (current_mode==MODE_TIME_ATTACK &&
                 shown_seconds!=game_mode_seconds_display()) {
@@ -306,6 +314,7 @@ void main(void)
                     shown_seconds=60u;
                     result_saved=0;
                     last_service_ms=now_ms;
+                    running_elapsed_ms=0;
                 }
                 if (key==KEY_RESTART || before!=snake_state()) {
                     redraw=1;
@@ -321,6 +330,11 @@ void main(void)
                 if (snake_state()!=SNAKE_RUNNING) {
                     update_lcd=1;
                 }
+            }
+            if (app_state==APP_STATE_GAME && snake_state()==SNAKE_RUNNING &&
+                dynamic_obstacle_update(running_elapsed_ms)) {
+                redraw=1;
+                update_lcd=1;
             }
             if (app_state==APP_STATE_GAME && !result_saved &&
                 (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN ||

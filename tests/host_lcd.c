@@ -58,12 +58,20 @@ int main(void)
     lcd1602_show_time_up(120); finish_update();
     assert(memcmp(screen[0],"TIME UP!        ",16)==0);
     assert(memcmp(screen[1],"SCORE: 0120     ",16)==0);
+    lcd1602_show_mode_menu(MODE_SURVIVAL,70); finish_update();
+    assert(memcmp(screen[0],"MODE:SURVIVAL   ",16)==0);
+    lcd1602_show_survival(GAME_LEVEL_HARD,3,0); finish_update();
+    assert(memcmp(screen[0],"SURVIVAL HARD   ",16)==0);
+    assert(memcmp(screen[1],"OBST:03 PLAYING ",16)==0);
+    lcd1602_show_survival(GAME_LEVEL_HARD,3,1); finish_update();
+    assert(memcmp(screen[0],"SURVIVAL PAUSED ",16)==0);
+    assert(memcmp(screen[1],"OBSTACLES: 03   ",16)==0);
     lcd1602_show_result(0,50); finish_update();
     assert(memcmp(screen[0],"GAME OVER       ",16)==0);
     assert(memcmp(screen[1],"SCORE: 0050     ",16)==0);
     lcd1602_show_result(1,1090); finish_update();
     assert(memcmp(screen[0],"YOU WIN!        ",16)==0);
     assert(memcmp(screen[1],"SCORE: 1090     ",16)==0);
-    puts("PASS: LCD mode menu, countdown, time up, pause and results");
+    puts("PASS: LCD four modes, survival count, countdown, pause and results");
     return 0;
 }

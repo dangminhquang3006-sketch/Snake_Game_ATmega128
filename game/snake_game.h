@@ -30,5 +30,7 @@ SnakePoint snake_food(void);
 unsigned int snake_get_score(void);
 void snake_mix_entropy(unsigned long now_ms);
 void snake_time_up(void);
+void snake_next_head(signed int *x,signed int *y);
+unsigned char snake_random_index(unsigned char count);
 
 #endif

@@ -3,6 +3,7 @@
 #include "game_map.h"
 #include "game_mode.h"
 #include "bonus_food.h"
+#include "dynamic_obstacle.h"
 
 typedef enum { DIR_UP=0, DIR_RIGHT, DIR_DOWN, DIR_LEFT } SnakeDirection;
 
@@ -27,6 +28,23 @@ static unsigned int random_next(void)
     return rng_state;
 }
 
+unsigned char snake_random_index(unsigned char count)
+{
+    if (count==0u) return 0;
+    return (unsigned char)(random_next()%count);
+}
+
+void snake_next_head(signed int *x,signed int *y)
+{
+    SnakeDirection heading=turn_queued ? next_direction : direction;
+    *x=(signed int)segments[0].x;
+    *y=(signed int)segments[0].y;
+    if (heading==DIR_UP) --*y;
+    else if (heading==DIR_DOWN) ++*y;
+    else if (heading==DIR_LEFT) --*x;
+    else ++*x;
+}
+
 void snake_mix_entropy(unsigned long now_ms)
 {
     rng_state ^= (unsigned int)now_ms;
@@ -47,14 +65,16 @@ static void place_food(void)
     unsigned char x,y,empty_count=0,target;
     for (y=0; y<GRID_ROWS; ++y)
         for (x=0; x<GRID_COLS; ++x)
-            if (!game_map_is_blocked(x,y) && !occupied(x,y) &&
+            if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
+                !occupied(x,y) &&
                 (!bonus_food_active() || bonus_food_position().x!=x ||
                  bonus_food_position().y!=y)) ++empty_count;
 
     if (empty_count==0 && bonus_food_active()) {
         bonus_food_collect();
         for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-            if (!game_map_is_blocked(x,y) && !occupied(x,y)) ++empty_count;
+            if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
+                !occupied(x,y)) ++empty_count;
     }
     if (empty_count==0) {
         state=SNAKE_WIN;
@@ -63,7 +83,8 @@ static void place_food(void)
     target=(unsigned char)(random_next() % empty_count);
     for (y=0; y<GRID_ROWS; ++y) {
         for (x=0; x<GRID_COLS; ++x) {
-            if (!game_map_is_blocked(x,y) && !occupied(x,y) &&
+            if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
+                !occupied(x,y) &&
                 (!bonus_food_active() || bonus_food_position().x!=x ||
                  bonus_food_position().y!=y)) {
                 if (target==0) {
@@ -81,14 +102,18 @@ static void try_spawn_bonus(void)
 {
     unsigned char x,y,count=0,target;
     SnakePoint point;
-    if (game_mode_get_current()==MODE_STANDARD || bonus_food_active()) return;
+    if ((game_mode_get_current()!=MODE_BONUS &&
+         game_mode_get_current()!=MODE_TIME_ATTACK) ||
+        bonus_food_active()) return;
     for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-        if (!game_map_is_blocked(x,y) && !occupied(x,y) &&
+        if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
+            !occupied(x,y) &&
             !(food.x==x && food.y==y)) ++count;
     if (count==0) return;
     target=(unsigned char)(random_next()%count);
     for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-        if (!game_map_is_blocked(x,y) && !occupied(x,y) &&
+        if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
+            !occupied(x,y) &&
             !(food.x==x && food.y==y)) {
             if (target==0) {
                 point.x=x; point.y=y;
@@ -101,6 +126,7 @@ static void try_spawn_bonus(void)
 
 void snake_init(void)
 {
+    dynamic_obstacle_reset();
     segments[0].x=7; segments[0].y=4;
     segments[1].x=6; segments[1].y=4;
     segments[2].x=5; segments[2].y=4;
@@ -158,7 +184,8 @@ unsigned char snake_step(void)
         state=SNAKE_GAME_OVER;
         return 1;
     }
-    if (game_map_is_blocked(new_x,new_y)) {
+    if (game_map_is_blocked(new_x,new_y) ||
+        dynamic_obstacle_is_blocked(new_x,new_y)) {
         state=SNAKE_GAME_OVER;
         return 1;
     }
@@ -193,7 +220,7 @@ unsigned char snake_step(void)
         bonus_food_collect();
     }
 
-    if (current_length==game_map_get_free_cells()) state=SNAKE_WIN;
+    if (current_length==dynamic_obstacle_playable_cells()) state=SNAKE_WIN;
     else if (growing) {
         ++normal_foods_eaten;
         place_food();
