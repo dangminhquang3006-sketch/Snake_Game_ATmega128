@@ -71,6 +71,52 @@ static void wrap_position(signed int *x,signed int *y)
     else if (*y>=GRID_ROWS) *y=0;
 }
 
+static void reverse_segments(void)
+{
+    unsigned char left=0u,right=(unsigned char)(current_length-1u);
+    SnakePoint saved;
+    while (left<right) {
+        saved=segments[left];
+        segments[left]=segments[right];
+        segments[right]=saved;
+        ++left;
+        --right;
+    }
+}
+
+/* After reversal, the head must move away from its adjacent neck. */
+static unsigned char direction_from_neck(SnakeDirection *heading)
+{
+    SnakePoint head,neck;
+    if (current_length<2u) return 0;
+    head=segments[0];
+    neck=segments[1];
+    if (head.y==neck.y) {
+        if ((head.x==(unsigned char)(neck.x+1u)) ||
+            (head.x==0u && neck.x==GRID_COLS-1u && snake_can_wrap())) {
+            *heading=DIR_RIGHT;
+            return 1;
+        }
+        if ((neck.x==(unsigned char)(head.x+1u)) ||
+            (head.x==GRID_COLS-1u && neck.x==0u && snake_can_wrap())) {
+            *heading=DIR_LEFT;
+            return 1;
+        }
+    } else if (head.x==neck.x) {
+        if ((head.y==(unsigned char)(neck.y+1u)) ||
+            (head.y==0u && neck.y==GRID_ROWS-1u && snake_can_wrap())) {
+            *heading=DIR_DOWN;
+            return 1;
+        }
+        if ((neck.y==(unsigned char)(head.y+1u)) ||
+            (head.y==GRID_ROWS-1u && neck.y==0u && snake_can_wrap())) {
+            *heading=DIR_UP;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void snake_next_head(signed int *x,signed int *y)
 {
     SnakeDirection heading=turn_queued ? next_direction : direction;
@@ -270,6 +316,15 @@ unsigned char snake_step(void)
 
     if (current_length==dynamic_obstacle_playable_cells()) state=SNAKE_WIN;
     else if (growing) {
+        if (current_level==GAME_LEVEL_HARD) {
+            reverse_segments();
+            if (!direction_from_neck(&direction)) {
+                state=SNAKE_GAME_OVER;
+                return 1;
+            }
+            next_direction=direction;
+            turn_queued=0u;
+        }
         ++normal_foods_eaten;
         place_food();
         if (state==SNAKE_RUNNING &&

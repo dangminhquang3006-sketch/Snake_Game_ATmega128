@@ -1,10 +1,18 @@
-# Snake Game ATmega128 — Prompt 11
+# Snake Game ATmega128 — Prompt 12
 
-Firmware Embedded C cho CodeVisionAVR. Source được sửa trên Ubuntu; Build All và tạo HEX trên Windows bằng CodeVisionAVR; sau đó kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của đúng source Prompt 11.
+Firmware Embedded C cho CodeVisionAVR. Source được sửa trên Ubuntu; Build All và tạo HEX trên Windows bằng CodeVisionAVR; sau đó kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của đúng source Prompt 12.
+
+## Reverse Snake (Prompt 12)
+
+HARD ăn **CIRCLE/SQUARE/STAR** sẽ cộng 10/20/50 điểm, tăng đúng một đốt, rồi đảo thứ tự mảng `segments` tại chỗ nếu ván còn RUNNING. Đầu mới là đuôi cũ; chiều dài, tập tọa độ và điểm không đổi do thao tác đảo. Hướng mới được suy ra từ đầu và đốt cổ sau khi đảo, kể cả khi hai đốt nằm ở hai cạnh đối diện của lưới Wrap Around. `next_direction` được đồng bộ và `turn_queued` xóa; không có bước di chuyển thứ hai trong cùng tick. Nếu vừa WIN thì cập nhật điểm và kết thúc, không đảo.
+
+EASY/NORMAL không đảo. BONUS FOOD chỉ cộng 30 điểm, không tăng đốt và không kích hoạt Reverse. Trong BONUS/TIME_ATTACK, ba loại thức ăn thường vẫn kích hoạt Reverse ở HARD; countdown và tuổi thọ Bonus không reset. Trong SURVIVAL, vật cản và lịch 20 giây được giữ, các lần Safe Spawn sau đó truy vấn vị trí đầu mới. Reverse không tự lái rắn tránh vật cản ở bước tiếp theo. Pause giữ nguyên đầu/hướng; Restart đưa rắn về ba đốt và RIGHT, giữ Level/Map/Mode. EEPROM v4 và 36 kỷ lục giữ nguyên; kỷ lục HARD cũ vẫn tồn tại dù điều kiện chơi đã đổi.
+
+**Kiểm thử Proteus Prompt 12:** Build All project ATmega128 hiện có và nạp HEX mới vào schematic, kiểm tra Clock Frequency. Thử HARD ăn từng Fruit, thân chữ L, rắn qua bốn cạnh, nhiều lần Reverse liên tiếp và phím đổi hướng sau Reverse. Thử Bonus không Reverse; Pause/Resume, Restart, WIN, GAME_OVER, TIME_UP; thử trên CLASSIC/PILLARS/LABYRINTH và STANDARD/BONUS/TIME_ATTACK/SURVIVAL. Theo dõi Nokia, LCD, LED và kỷ lục sau reset MCU. Các thử nghiệm Proteus/board cho đúng source này chưa chạy trong workspace; bộ kiểm tra host C89 đã chạy bằng `sh tests/run_host_validation.sh`.
 
 ## Wrap Around (Prompt 11)
 
-EASY giữ luật va chạm biên. NORMAL và HARD xuyên cả bốn cạnh: phải `(13,y)→(0,y)`, trái `(0,y)→(13,y)`, trên `(x,0)→(x,7)`, dưới `(x,7)→(x,0)`. Mỗi tick vẫn đi một ô; hướng và tốc độ 500/300/150 ms không đổi. `main.c` chuyển Level đã chọn cho Snake lúc bắt đầu ván; Restart giữ Level. HARD chưa đảo đầu và đuôi; đó là phạm vi Prompt 12.
+EASY giữ luật va chạm biên. NORMAL và HARD xuyên cả bốn cạnh: phải `(13,y)→(0,y)`, trái `(0,y)→(13,y)`, trên `(x,0)→(x,7)`, dưới `(x,7)→(x,0)`. Mỗi tick vẫn đi một ô; hướng và tốc độ 500/300/150 ms không đổi. `main.c` chuyển Level đã chọn cho Snake lúc bắt đầu ván; Restart giữ Level. HARD có thêm Reverse Snake theo mục Prompt 12 ở trên.
 
 Sau khi đổi tọa độ, Snake vẫn kiểm tra tường tĩnh, vật cản động và thân trước khi cập nhật mảng. Đi vào ô đuôi vừa rời được phép nếu không tăng chiều dài. Thức ăn CIRCLE/SQUARE/STAR và Bonus ở cạnh đối diện vẫn được xử lý theo luật cũ. Renderer vẽ từng đốt tại tọa độ ô, nên rắn có thể hiển thị ở cả hai cạnh mà không vẽ đường nối hoặc thêm framebuffer.
 
@@ -16,7 +24,7 @@ Trong SURVIVAL, Safe Spawn dùng khoảng cách Manhattan ngắn nhất qua biê
 
 Mỗi lần sinh thức ăn thường, PRNG LFSR hiện có chọn một giá trị 0–99: 0–59 là **CIRCLE** (+10), 60–94 là **SQUARE** (+20), 95–99 là **STAR** (+50). Mọi loại đều tăng đúng một đốt, xuất hiện trong cả ba Level và bốn Mode; tốc độ 500/300/150 ms giữ nguyên. Vị trí tiếp tục được chọn từ các ô không có tường cố định, vật cản động, rắn hoặc Bonus đang hoạt động. Phép `%100` trên LFSR 16 bit có sai lệch rất nhỏ vì chu kỳ 65535 không chia hết cho 100; kiểm thử host đo tần suất trên 30000 lần chọn. Seed ban đầu cố định và được trộn với thời điểm phím bắt đầu từ Timer; trong Proteus, thao tác phím giống nhau có thể cho chuỗi giống nhau.
 
-CIRCLE là viền tròn 5×5, SQUARE là khối đặc 3×3, STAR là hình sao 5×5; Bonus vẫn là khung vuông 5×5, +30 và không tăng chiều dài. Ăn STAR vẫn tính là một thức ăn thường cho bộ đếm kích hoạt Bonus sau mỗi ba lần ăn trong BONUS/TIME_ATTACK. SURVIVAL không có Bonus. NORMAL hiện vẫn va chạm biên; HARD hiện chưa đảo đầu và đuôi. Wrap Around và Reverse Snake dành cho Prompt 11/12; phân loại High Score theo phiên bản luật dành cho Prompt 13.
+CIRCLE là viền tròn 5×5, SQUARE là khối đặc 3×3, STAR là hình sao 5×5; Bonus vẫn là khung vuông 5×5, +30 và không tăng chiều dài. Ăn STAR vẫn tính là một thức ăn thường cho bộ đếm kích hoạt Bonus sau mỗi ba lần ăn trong BONUS/TIME_ATTACK. SURVIVAL không có Bonus. NORMAL đã có Wrap Around; HARD có cả Wrap Around và Reverse Snake. Phân loại High Score theo phiên bản luật dành cho Prompt 13.
 
 EEPROM giữ layout v4 và 36 tổ hợp. Bản ghi v1/v2/v3 tiếp tục được đọc theo giới hạn điểm cũ; bản ghi v4 dùng giới hạn bảo thủ theo số ô map: tối đa 50 điểm cho mỗi lần tăng đốt, cộng tối đa 30 điểm cho mỗi ba thức ăn thường ở BONUS/TIME_ATTACK. Ví dụ CLASSIC tối đa 5450 điểm thường, hoặc 6530 khi có Bonus. Điểm cũ vẫn được giữ dù luật tính điểm thay đổi; không tự reset EEPROM. LED 7 đoạn, LCD và màn hình kết thúc Nokia bão hòa ở 9999; điểm trong RAM dùng `unsigned int` và phép cộng có bảo vệ tràn.
 

@@ -38,6 +38,17 @@ int main(void)
     assert(segments[0].x==13u && segments[0].y==4u);
     snake_set_level(GAME_LEVEL_EASY);
     snake_init();
+    snake_set_level(GAME_LEVEL_HARD);
+    blocked_rows[7]=(unsigned int)(1u<<13);
+    obstacle_count=1u;
+    elapsed_ms=12345UL;
+    food.x=8u; food.y=4u; food_type=FOOD_CIRCLE;
+    assert(snake_step()==1 && snake_state()==SNAKE_RUNNING);
+    assert(segments[0].x==5u && direction==DIR_LEFT);
+    assert(obstacle_count==1u && elapsed_ms==12345UL);
+    assert(!dynamic_obstacle_candidate_valid(segments[0].x,segments[0].y));
+    snake_set_level(GAME_LEVEL_EASY);
+    snake_init();
     blocked_rows[7]=(unsigned int)(1u<<13);
     obstacle_count=1u;
     current_length=110u;
