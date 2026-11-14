@@ -106,6 +106,22 @@ int main(void)
     highscore_init();
     assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==1110u);
     assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,5460)==HIGHSCORE_SAVE_FAILED);
+    clear_eeprom();
+    make_record(hs_v4_a,4,36,100);
+    make_record(hs_v4_b,4,36,200);
+    hs_v4_a[3]=0xff; hs_v4_a[4]=0xff;
+    hs_v4_a[77]=crc(hs_v4_a,77);
+    hs_v4_b[3]=0; hs_v4_b[4]=0;
+    hs_v4_b[77]=crc(hs_v4_b,77);
+    highscore_init();
+    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==200u);
+    hs_v4_b[78]=0;
+    highscore_init();
+    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==100u);
+    hs_v4_b[78]=0xa5;
+    hs_v4_a[77]^=1u;
+    highscore_init();
+    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==200u);
     puts("PASS: mode menu, EEPROM v1/v2/v3 to v4, CRC, 36 scores");
     return 0;
 }

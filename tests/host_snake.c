@@ -237,6 +237,38 @@ static void check_food(void)
     }
 }
 
+/* Host smoke coverage for every Level x Map x Mode combination. */
+static void check_all_combinations(void)
+{
+    unsigned char level,map,mode;
+    for (level=0u;level<3u;++level)
+        for (map=0u;map<MAP_COUNT;++map)
+            for (mode=0u;mode<MODE_COUNT;++mode) {
+                assert(game_map_select((MapId)map));
+                assert(game_mode_select((GameMode)mode));
+                snake_set_level((GameLevel)level);
+                game_mode_reset();
+                snake_init();
+                assert(snake_state()==SNAKE_RUNNING);
+                assert(snake_length()==3u && snake_get_score()==0u);
+                assert(dynamic_obstacle_get_count()==0u);
+                check_food();
+                food.x=8u; food.y=4u; food_type=FOOD_CIRCLE;
+                assert(snake_step()==1 && snake_state()==SNAKE_RUNNING);
+                assert(snake_get_score()==10u && snake_length()==4u);
+                assert(segments[0].x==((level==2u)?5u:8u));
+                check_food();
+                if (mode==MODE_TIME_ATTACK)
+                    assert(game_mode_remaining_ms()==TIME_ATTACK_DURATION_MS);
+                if (mode==MODE_SURVIVAL)
+                    assert(dynamic_obstacle_playable_cells()==
+                           game_map_get_free_cells());
+            }
+    assert(game_map_select(MAP_CLASSIC));
+    assert(game_mode_select(MODE_STANDARD));
+    snake_set_level(GAME_LEVEL_EASY);
+}
+
 static void check_map_win(MapId map)
 {
     unsigned char x,y,i=1;
@@ -486,6 +518,7 @@ int main(void)
     check_map_win(MAP_CLASSIC);
     snake_set_level(GAME_LEVEL_EASY);
     check_reverse_rules();
+    check_all_combinations();
     puts("PASS: snake/maps, fruit, wrap, reverse, bonus/time attack and survival");
     return 0;
 }
