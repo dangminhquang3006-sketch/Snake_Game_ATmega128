@@ -3,6 +3,35 @@
 /* Include implementation to exercise the hard-to-reach tail and win states. */
 #include "../game/snake_game.c"
 
+static void check_fruit_rules(void)
+{
+    unsigned int counts[3]={0,0,0};
+    unsigned int i;
+    unsigned char type;
+    assert(snake_food_type_from_roll(0)==FOOD_CIRCLE);
+    assert(snake_food_type_from_roll(59)==FOOD_CIRCLE);
+    assert(snake_food_type_from_roll(60)==FOOD_SQUARE);
+    assert(snake_food_type_from_roll(94)==FOOD_SQUARE);
+    assert(snake_food_type_from_roll(95)==FOOD_STAR);
+    assert(snake_food_type_from_roll(99)==FOOD_STAR);
+    rng_state=0xACE1u;
+    for (i=0;i<30000u;++i) {
+        type=(unsigned char)snake_food_type_from_roll(
+            (unsigned char)(random_next()%100u));
+        ++counts[type];
+    }
+    assert(counts[FOOD_CIRCLE]>17000u && counts[FOOD_CIRCLE]<19000u);
+    assert(counts[FOOD_SQUARE]>9500u && counts[FOOD_SQUARE]<11500u);
+    assert(counts[FOOD_STAR]>1100u && counts[FOOD_STAR]<1900u);
+    snake_init();
+    food.x=8; food.y=4; food_type=FOOD_CIRCLE;
+    assert(snake_step()==1 && score==10u && current_length==4u);
+    food.x=9; food.y=4; food_type=FOOD_SQUARE;
+    assert(snake_step()==1 && score==30u && current_length==5u);
+    food.x=10; food.y=4; food_type=FOOD_STAR;
+    assert(snake_step()==1 && score==80u && current_length==6u);
+}
+
 static void check_food(void)
 {
     unsigned char i;
@@ -28,6 +57,7 @@ static void check_map_win(MapId map)
         }
     assert(i==current_length);
     food.x=1; food.y=0;
+    food_type=FOOD_CIRCLE;
     score=(unsigned int)(current_length-3u)*10u;
     direction=DIR_RIGHT; next_direction=DIR_RIGHT;
     assert(snake_step()==1);
@@ -50,6 +80,7 @@ int main(void)
     assert(!game_map_validate((MapId)-1));
     assert(!game_map_select((MapId)3));
     assert(game_map_select(MAP_CLASSIC));
+    check_fruit_rules();
 
     snake_init();
     assert(snake_length()==3 && snake_get_score()==0);
@@ -71,6 +102,7 @@ int main(void)
 
     snake_handle_key(KEY_RESTART);
     food.x=8; food.y=4;
+    food_type=FOOD_CIRCLE;
     snake_step();
     assert(snake_length()==4 && snake_get_score()==10);
     head=snake_segment(0); assert(head.x==8 && head.y==4);
@@ -135,6 +167,7 @@ int main(void)
             }
     assert(i==111);
     food.x=1; food.y=0;
+    food_type=FOOD_CIRCLE;
     score=1080;
     direction=DIR_RIGHT; next_direction=DIR_RIGHT;
     snake_step();
@@ -150,6 +183,7 @@ int main(void)
         current_length=3;
         direction=DIR_RIGHT; next_direction=DIR_RIGHT;
         food.x=8; food.y=4;
+        food_type=FOOD_CIRCLE;
         assert(snake_step()==1);
     }
     assert(normal_foods_eaten==3u && bonus_food_active());
@@ -199,6 +233,7 @@ int main(void)
     snake_init();
     normal_foods_eaten=2u;
     food.x=8; food.y=4;
+    food_type=FOOD_CIRCLE;
     assert(snake_step()==1 && !bonus_food_active());
     assert(!dynamic_obstacle_update(20000UL) && dynamic_obstacle_get_count()==0u);
     assert(game_mode_select(MODE_SURVIVAL));

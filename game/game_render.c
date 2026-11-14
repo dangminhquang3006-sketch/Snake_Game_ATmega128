@@ -14,9 +14,31 @@ static flash char restart_text[]="9:RESTART";
 static flash char menu_text[]="1:MENU";
 static char score_text[]="SCORE: 0000";
 
+static void render_fruit(SnakePoint point,FoodType type)
+{
+    unsigned char x=(unsigned char)(point.x*CELL_SIZE);
+    unsigned char y=(unsigned char)(point.y*CELL_SIZE);
+    if (type==FOOD_SQUARE) {
+        display_fill_rect((unsigned char)(x+1u),(unsigned char)(y+1u),3,3);
+    } else if (type==FOOD_STAR) {
+        display_fill_rect((unsigned char)(x+2u),y,1,1);
+        display_fill_rect(x,(unsigned char)(y+2u),5,1);
+        display_fill_rect((unsigned char)(x+1u),(unsigned char)(y+3u),1,1);
+        display_fill_rect((unsigned char)(x+3u),(unsigned char)(y+3u),1,1);
+        display_fill_rect(x,(unsigned char)(y+4u),1,1);
+        display_fill_rect((unsigned char)(x+4u),(unsigned char)(y+4u),1,1);
+    } else {
+        display_fill_rect((unsigned char)(x+1u),y,3,1);
+        display_fill_rect(x,(unsigned char)(y+1u),1,3);
+        display_fill_rect((unsigned char)(x+4u),(unsigned char)(y+1u),1,3);
+        display_fill_rect((unsigned char)(x+1u),(unsigned char)(y+4u),3,1);
+    }
+}
+
 static void render_final_score(void)
 {
     unsigned int value=snake_get_score();
+    if (value>9999u) value=9999u;
     score_text[7]=(char)('0'+value/1000);
     score_text[8]=(char)('0'+(value/100)%10);
     score_text[9]=(char)('0'+(value/10)%10);
@@ -61,8 +83,7 @@ void game_render(void)
         }
     }
     point=snake_food();
-    display_fill_rect((unsigned char)(point.x*CELL_SIZE+1),
-                      (unsigned char)(point.y*CELL_SIZE+1),3,3);
+    render_fruit(point,snake_get_food_type());
     if (bonus_food_active()) {
         point=bonus_food_position();
         display_rect((unsigned char)(point.x*CELL_SIZE),

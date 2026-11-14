@@ -33,6 +33,7 @@ int main(void)
         }
     assert(i==110u);
     food.x=1; food.y=0;
+    food_type=FOOD_CIRCLE;
     score=1070u;
     direction=DIR_RIGHT; next_direction=DIR_RIGHT;
     assert(snake_step()==1);

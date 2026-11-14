@@ -10,6 +10,7 @@ typedef enum { DIR_UP=0, DIR_RIGHT, DIR_DOWN, DIR_LEFT } SnakeDirection;
 static SnakePoint segments[SNAKE_MAX_LENGTH];
 static unsigned char current_length;
 static SnakePoint food;
+static FoodType food_type;
 static unsigned int score;
 static unsigned char normal_foods_eaten;
 static SnakeDirection direction;
@@ -26,6 +27,20 @@ static unsigned int random_next(void)
     if (low_bit) rng_state ^= 0xB400u;
     if (rng_state==0) rng_state=0xACE1u;
     return rng_state;
+}
+
+FoodType snake_food_type_from_roll(unsigned char roll)
+{
+    if (roll<60u) return FOOD_CIRCLE;
+    if (roll<95u) return FOOD_SQUARE;
+    return FOOD_STAR;
+}
+
+static unsigned char food_score(FoodType type)
+{
+    if (type==FOOD_STAR) return 50u;
+    if (type==FOOD_SQUARE) return 20u;
+    return 10u;
 }
 
 unsigned char snake_random_index(unsigned char count)
@@ -90,6 +105,9 @@ static void place_food(void)
                 if (target==0) {
                     food.x=x;
                     food.y=y;
+                    /* One PRNG draw per new fruit type. */
+                    food_type=snake_food_type_from_roll(
+                        (unsigned char)(random_next()%100u));
                     return;
                 }
                 --target;
@@ -132,6 +150,7 @@ void snake_init(void)
     segments[2].x=5; segments[2].y=4;
     current_length=SNAKE_INITIAL_LENGTH;
     score=0;
+    food_type=FOOD_CIRCLE;
     normal_foods_eaten=0;
     bonus_food_reset();
     direction=DIR_RIGHT;
@@ -209,14 +228,18 @@ unsigned char snake_step(void)
         /* Food occupies a free cell, so length is below map capacity. */
         for (i=current_length; i>0; --i) segments[i]=segments[i-1];
         ++current_length;
-        score=(unsigned int)(score+10u);
+        if (score<=65535u-food_score(food_type))
+            score=(unsigned int)(score+food_score(food_type));
+        else score=65535u;
     } else {
         for (i=(unsigned char)(current_length-1); i>0; --i)
             segments[i]=segments[i-1];
     }
     segments[0]=new_head;
     if (eating_bonus) {
-        score=(unsigned int)(score+BONUS_SCORE);
+        if (score<=65535u-BONUS_SCORE)
+            score=(unsigned int)(score+BONUS_SCORE);
+        else score=65535u;
         bonus_food_collect();
     }
 
@@ -239,6 +262,7 @@ void snake_time_up(void)
         state=SNAKE_TIME_UP;
 }
 SnakePoint snake_food(void) { return food; }
+FoodType snake_get_food_type(void) { return food_type; }
 
 SnakePoint snake_segment(unsigned char index)
 {

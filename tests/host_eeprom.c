@@ -102,7 +102,10 @@ int main(void)
     for (i=0;i<36u;++i)
         assert(highscore_get((GameLevel)((i%9u)/3u),(MapId)(i%3u),
                              (GameMode)(i/9u))==(unsigned int)(600u+10u*i));
-    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,1110)==HIGHSCORE_SAVE_FAILED);
+    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,1110)==HIGHSCORE_SAVED);
+    highscore_init();
+    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==1110u);
+    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,5460)==HIGHSCORE_SAVE_FAILED);
     puts("PASS: mode menu, EEPROM v1/v2/v3 to v4, CRC, 36 scores");
     return 0;
 }

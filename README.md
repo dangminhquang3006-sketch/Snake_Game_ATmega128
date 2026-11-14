@@ -1,6 +1,16 @@
-# Snake Game ATmega128 — Prompt 9
+# Snake Game ATmega128 — Prompt 10
 
-Firmware Embedded C cho CodeVisionAVR. Source được sửa trên Ubuntu; Build All và tạo HEX trên Windows bằng CodeVisionAVR; sau đó kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của đúng source Prompt 9.
+Firmware Embedded C cho CodeVisionAVR. Source được sửa trên Ubuntu; Build All và tạo HEX trên Windows bằng CodeVisionAVR; sau đó kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của đúng source Prompt 10.
+
+## Multi-Fruit (Prompt 10)
+
+Mỗi lần sinh thức ăn thường, PRNG LFSR hiện có chọn một giá trị 0–99: 0–59 là **CIRCLE** (+10), 60–94 là **SQUARE** (+20), 95–99 là **STAR** (+50). Mọi loại đều tăng đúng một đốt, xuất hiện trong cả ba Level và bốn Mode; tốc độ 500/300/150 ms giữ nguyên. Vị trí tiếp tục được chọn từ các ô không có tường cố định, vật cản động, rắn hoặc Bonus đang hoạt động. Phép `%100` trên LFSR 16 bit có sai lệch rất nhỏ vì chu kỳ 65535 không chia hết cho 100; kiểm thử host đo tần suất trên 30000 lần chọn. Seed ban đầu cố định và được trộn với thời điểm phím bắt đầu từ Timer; trong Proteus, thao tác phím giống nhau có thể cho chuỗi giống nhau.
+
+CIRCLE là viền tròn 5×5, SQUARE là khối đặc 3×3, STAR là hình sao 5×5; Bonus vẫn là khung vuông 5×5, +30 và không tăng chiều dài. Ăn STAR vẫn tính là một thức ăn thường cho bộ đếm kích hoạt Bonus sau mỗi ba lần ăn trong BONUS/TIME_ATTACK. SURVIVAL không có Bonus. NORMAL hiện vẫn va chạm biên; HARD hiện chưa đảo đầu và đuôi. Wrap Around và Reverse Snake dành cho Prompt 11/12; phân loại High Score theo phiên bản luật dành cho Prompt 13.
+
+EEPROM giữ layout v4 và 36 tổ hợp. Bản ghi v1/v2/v3 tiếp tục được đọc theo giới hạn điểm cũ; bản ghi v4 dùng giới hạn bảo thủ theo số ô map: tối đa 50 điểm cho mỗi lần tăng đốt, cộng tối đa 30 điểm cho mỗi ba thức ăn thường ở BONUS/TIME_ATTACK. Ví dụ CLASSIC tối đa 5450 điểm thường, hoặc 6530 khi có Bonus. Điểm cũ vẫn được giữ dù luật tính điểm thay đổi; không tự reset EEPROM. LED 7 đoạn, LCD và màn hình kết thúc Nokia bão hòa ở 9999; điểm trong RAM dùng `unsigned int` và phép cộng có bảo vệ tràn.
+
+**Kiểm thử Proteus Prompt 10:** Build All project ATmega128 hiện có, dùng HEX mới và kiểm tra Clock Frequency. Thử từng Fruit ở EASY/NORMAL/HARD trên CLASSIC/PILLARS/LABYRINTH, xác nhận hình/điểm/tăng một đốt; trong BONUS/TIME_ATTACK kiểm tra STAR và Bonus độc lập, Pause và 60 giây; trong SURVIVAL kiểm tra thức ăn không nằm trên tường động. Restart phải giữ Level/Map/Mode và kỷ lục. Tạo điểm trên 1090, reset MCU và kiểm tra EEPROM v4 đọc lại. Các thử nghiệm Proteus này **chưa chạy** trong workspace; kiểm thử host C89 đã chạy bằng `sh tests/run_host_validation.sh`.
 
 ## Game Mode và điều khiển
 
@@ -8,10 +18,10 @@ Luồng menu: **SELECT LEVEL → SELECT MAP → SELECT MODE → GAME**. Phím 2/
 
 | Mode | Luật chính |
 |---|---|
-| STANDARD | Thức ăn +10 điểm, +1 đốt; không Bonus, không giới hạn giờ |
-| BONUS | Như STANDARD; Bonus +30 điểm, không tăng đốt, tồn tại 5 giây RUNNING |
+| STANDARD | Multi-Fruit +10/+20/+50 điểm, +1 đốt; không Bonus, không giới hạn giờ |
+| BONUS | Multi-Fruit; Bonus +30 điểm, không tăng đốt, tồn tại 5 giây RUNNING |
 | TIME_ATTACK | Có Bonus; 60 giây RUNNING, hết giờ chuyển TIME_UP |
-| SURVIVAL | Thức ăn +10 điểm, +1 đốt; không Bonus; thử thêm một vật cản mỗi 20 giây RUNNING, tối đa 8 |
+| SURVIVAL | Multi-Fruit, +1 đốt; không Bonus; thử thêm một vật cản mỗi 20 giây RUNNING, tối đa 8 |
 
 Timer1 vẫn tạo tick 1 ms. `timer_get_ms()` đọc tick ISR 32 bit nguyên tử; main dùng hiệu `unsigned long` để chịu tràn. Pause dừng thời gian Bonus, Time Attack và lịch sinh vật cản; Resume không dồn bước. Trong SURVIVAL, bước rắn được xử lý trước, rồi mới thử sinh vật cản nếu game còn RUNNING. Restart xóa tất cả vật cản động và đặt lại lịch 20 giây.
 
@@ -23,7 +33,7 @@ Timer1 vẫn tạo tick 1 ms. `timer_get_ms()` đọc tick ISR 32 bit nguyên t�
 
 Rắn kiểm tra va chạm tường động trước khi sửa mảng thân. Thuật toán thức ăn hai lượt duyệt loại cả vật cản tĩnh và động. Số ô chơi được hiện tại bằng số ô trống của map gốc trừ số vật cản động; WIN dựa trên số này sau khi ăn, không dùng hằng 112. Vì ứng viên không được đặt lên rắn hoặc thức ăn, việc thêm vật cản không tự tạo WIN giả.
 
-Nokia vẽ tường tĩnh bằng viền 6×6, vật cản động bằng dấu X 5×5, thức ăn thường đặc 3×3, Bonus khung 5×5, rắn đặc 5×5. Menu Mode có bốn dòng ở y=8/18/28/38; dòng dài nhất `> TIME ATTACK` rộng 78 pixel, nằm trong 84×48. LCD SURVIVAL hiển thị `SURVIVAL HARD` / `OBST:03 PLAYING` hoặc `SURVIVAL PAUSED` / `OBSTACLES: 03`; LED CA vẫn hiển thị điểm. Không có framebuffer Nokia thứ hai.
+Nokia vẽ tường tĩnh bằng viền 6×6, vật cản động bằng dấu X 5×5, ba thức ăn thường theo hình CIRCLE/SQUARE/STAR, Bonus khung 5×5, rắn đặc 5×5. Menu Mode có bốn dòng ở y=8/18/28/38; dòng dài nhất `> TIME ATTACK` rộng 78 pixel, nằm trong 84×48. LCD SURVIVAL hiển thị `SURVIVAL HARD` / `OBST:03 PLAYING` hoặc `SURVIVAL PAUSED` / `OBSTACLES: 03`; LED CA vẫn hiển thị điểm. Không có framebuffer Nokia thứ hai.
 
 ## EEPROM v1 → v4
 

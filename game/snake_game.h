@@ -13,6 +13,12 @@ typedef struct {
 } SnakePoint;
 
 typedef enum {
+    FOOD_CIRCLE=0,
+    FOOD_SQUARE,
+    FOOD_STAR
+} FoodType;
+
+typedef enum {
     SNAKE_RUNNING=0,
     SNAKE_PAUSED,
     SNAKE_GAME_OVER,
@@ -27,6 +33,8 @@ SnakeState snake_state(void);
 SnakePoint snake_segment(unsigned char index);
 unsigned char snake_length(void);
 SnakePoint snake_food(void);
+FoodType snake_get_food_type(void);
+FoodType snake_food_type_from_roll(unsigned char roll);
 unsigned int snake_get_score(void);
 void snake_mix_entropy(unsigned long now_ms);
 void snake_time_up(void);
