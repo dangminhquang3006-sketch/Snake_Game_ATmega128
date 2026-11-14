@@ -32,6 +32,90 @@ static void check_fruit_rules(void)
     assert(snake_step()==1 && score==80u && current_length==6u);
 }
 
+static void check_wrap_rules(void)
+{
+    unsigned char level,edge;
+    signed int next_x,next_y;
+    SnakePoint head;
+    assert(game_map_select(MAP_CLASSIC));
+    assert(game_mode_select(MODE_STANDARD));
+    for (level=0u;level<3u;++level) {
+        snake_set_level((GameLevel)level);
+        assert(snake_can_wrap()==(unsigned char)(level!=0u));
+        for (edge=0u;edge<4u;++edge) {
+            snake_init();
+            food.x=6u; food.y=5u;
+            if (edge==0u) {
+                segments[0].x=13u; segments[0].y=4u;
+                direction=DIR_RIGHT;
+            } else if (edge==1u) {
+                segments[0].x=0u; segments[0].y=4u;
+                direction=DIR_LEFT;
+            } else if (edge==2u) {
+                segments[0].x=6u; segments[0].y=0u;
+                direction=DIR_UP;
+            } else {
+                segments[0].x=6u; segments[0].y=7u;
+                direction=DIR_DOWN;
+            }
+            next_direction=direction;
+            snake_next_head(&next_x,&next_y);
+            assert(snake_step()==1);
+            if (level==0u) {
+                assert(snake_state()==SNAKE_GAME_OVER);
+            } else {
+                assert(snake_state()==SNAKE_RUNNING);
+                head=snake_segment(0);
+                assert(head.x==(unsigned char)next_x &&
+                       head.y==(unsigned char)next_y);
+                assert(head.x==((edge==0u)?0u:((edge==1u)?13u:6u)));
+                assert(head.y==((edge==2u)?7u:((edge==3u)?0u:4u)));
+                assert(direction==next_direction);
+            }
+        }
+    }
+    snake_set_level(GAME_LEVEL_NORMAL);
+    snake_init();
+    segments[0].x=13u; segments[0].y=4u;
+    segments[1].x=12u; segments[1].y=4u;
+    segments[2].x=0u; segments[2].y=4u;
+    direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+    food.x=7u; food.y=7u;
+    assert(snake_step()==1 && snake_state()==SNAKE_RUNNING);
+    assert(segments[0].x==0u && segments[1].x==13u);
+    snake_init();
+    current_length=4u;
+    segments[0].x=13u; segments[0].y=4u;
+    segments[1].x=0u; segments[1].y=4u;
+    segments[2].x=1u; segments[2].y=4u;
+    segments[3].x=12u; segments[3].y=4u;
+    direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+    food.x=7u; food.y=7u;
+    assert(snake_step()==1 && snake_state()==SNAKE_GAME_OVER);
+    assert(segments[0].x==13u);
+    for (edge=0u;edge<3u;++edge) {
+        snake_init();
+        segments[0].x=13u; segments[0].y=4u;
+        direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+        food.x=0u; food.y=4u; food_type=(FoodType)edge;
+        assert(snake_step()==1 && current_length==4u);
+        assert(score==((edge==0u)?10u:((edge==1u)?20u:50u)));
+        assert(segments[0].x==0u && segments[0].y==4u);
+    }
+    assert(game_mode_select(MODE_BONUS));
+    snake_init();
+    segments[0].x=13u; segments[0].y=4u;
+    direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+    food.x=7u; food.y=7u;
+    head.x=0u; head.y=4u; bonus_food_spawn(head);
+    assert(snake_step()==1 && score==30u && current_length==3u);
+    assert(!bonus_food_active());
+    snake_handle_key(KEY_RESTART);
+    assert(snake_can_wrap() && snake_get_score()==0u && snake_length()==3u);
+    assert(game_mode_select(MODE_STANDARD));
+    snake_set_level(GAME_LEVEL_EASY);
+}
+
 static void check_food(void)
 {
     unsigned char i;
@@ -287,6 +371,7 @@ int main(void)
     normal_foods_eaten=2u;
     food.x=8; food.y=4;
     assert(snake_step()==1 && !bonus_food_active());
-    puts("PASS: snake/maps, bonus/time attack, survival obstacles and restart");
+    check_wrap_rules();
+    puts("PASS: snake/maps, fruit, wrap, bonus/time attack, survival and restart");
     return 0;
 }

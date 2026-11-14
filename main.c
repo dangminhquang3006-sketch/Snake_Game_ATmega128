@@ -279,6 +279,7 @@ void main(void)
                     if (game_mode_select(current_mode)) {
                         game_mode_reset();
                         move_period_ms=game_get_move_period(current_level);
+                        snake_set_level(current_level);
                         snake_init();
                         app_state=APP_STATE_GAME;
                         last_move_ms=now_ms;

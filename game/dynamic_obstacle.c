@@ -66,12 +66,13 @@ static void visit(unsigned char x,unsigned char y,unsigned char *end)
 static unsigned char remains_connected(unsigned char candidate_x,
                                         unsigned char candidate_y)
 {
-    unsigned char start=0,end=0,cell,x,y,seen=0,free_count=0;
+    unsigned char start=0,end=0,cell,x,y,seen=0,free_count=0,wrap;
     SnakePoint head;
     SnakePoint food;
 
     head = snake_segment(0);
     food = snake_food();
+    wrap=snake_can_wrap();
     for (y=0;y<GRID_ROWS;++y) {
         visited[y]=0;
         for (x=0;x<GRID_COLS;++x)
@@ -91,6 +92,16 @@ static unsigned char remains_connected(unsigned char candidate_x,
             visit(x,(unsigned char)(y-1u),&end);
         if (y+1u<GRID_ROWS && !is_wall(x,(unsigned char)(y+1u),candidate_x,candidate_y))
             visit(x,(unsigned char)(y+1u),&end);
+        if (wrap) {
+            if (x==0u && !is_wall((unsigned char)(GRID_COLS-1u),y,candidate_x,candidate_y))
+                visit((unsigned char)(GRID_COLS-1u),y,&end);
+            if (x==GRID_COLS-1u && !is_wall(0u,y,candidate_x,candidate_y))
+                visit(0u,y,&end);
+            if (y==0u && !is_wall(x,(unsigned char)(GRID_ROWS-1u),candidate_x,candidate_y))
+                visit(x,(unsigned char)(GRID_ROWS-1u),&end);
+            if (y==GRID_ROWS-1u && !is_wall(x,0u,candidate_x,candidate_y))
+                visit(x,0u,&end);
+        }
     }
     return (unsigned char)(seen==free_count &&
         (visited[food.y]&(1u<<food.x))!=0u);
@@ -98,15 +109,20 @@ static unsigned char remains_connected(unsigned char candidate_x,
 
 unsigned char dynamic_obstacle_candidate_valid(unsigned char x,unsigned char y)
 {
-    unsigned char i,distance;
+    unsigned char i,distance,dx,dy;
     SnakePoint head,point,food;
     signed int next_x,next_y;
     if (game_mode_get_current()!=MODE_SURVIVAL ||
         x>=GRID_COLS || y>=GRID_ROWS ||
         game_map_is_blocked(x,y) || dynamic_obstacle_is_blocked(x,y)) return 0;
     head=snake_segment(0);
-    distance=(unsigned char)(((x>head.x)?(x-head.x):(head.x-x))+
-                             ((y>head.y)?(y-head.y):(head.y-y)));
+    dx=(unsigned char)((x>head.x)?(x-head.x):(head.x-x));
+    dy=(unsigned char)((y>head.y)?(y-head.y):(head.y-y));
+    if (snake_can_wrap()) {
+        if (dx>GRID_COLS-dx) dx=(unsigned char)(GRID_COLS-dx);
+        if (dy>GRID_ROWS-dy) dy=(unsigned char)(GRID_ROWS-dy);
+    }
+    distance=(unsigned char)(dx+dy);
     if (distance<=DYNAMIC_OBSTACLE_SAFE_DIST) return 0;
     snake_next_head(&next_x,&next_y);
     if (next_x==(signed int)x && next_y==(signed int)y) return 0;

@@ -6,6 +6,7 @@
 int main(void)
 {
     unsigned char x,y,i;
+    signed int next_x,next_y;
     assert(game_mode_select(MODE_SURVIVAL));
     assert(game_map_select(MAP_CLASSIC));
     snake_init();
@@ -16,11 +17,27 @@ int main(void)
     obstacle_count=7u;
     food.x=8; food.y=4;
     assert(!dynamic_obstacle_candidate_valid(4,4));
+    snake_set_level(GAME_LEVEL_NORMAL);
+    assert(dynamic_obstacle_candidate_valid(4,4));
+    snake_set_level(GAME_LEVEL_EASY);
     assert(dynamic_obstacle_candidate_valid(0,0));
     assert(!dynamic_obstacle_candidate_valid(4,3));
     assert(!dynamic_obstacle_candidate_valid(8,4));
     assert(!dynamic_obstacle_candidate_valid(7,4));
     dynamic_obstacle_reset();
+    snake_set_level(GAME_LEVEL_NORMAL);
+    segments[0].x=13u; segments[0].y=4u;
+    direction=DIR_RIGHT; next_direction=DIR_RIGHT;
+    food.x=8u; food.y=4u;
+    assert(!dynamic_obstacle_candidate_valid(0u,4u));
+    snake_next_head(&next_x,&next_y);
+    assert(next_x==0 && next_y==4);
+    blocked_rows[4]=1u;
+    obstacle_count=1u;
+    assert(snake_step()==1 && snake_state()==SNAKE_GAME_OVER);
+    assert(segments[0].x==13u && segments[0].y==4u);
+    snake_set_level(GAME_LEVEL_EASY);
+    snake_init();
     blocked_rows[7]=(unsigned int)(1u<<13);
     obstacle_count=1u;
     current_length=110u;

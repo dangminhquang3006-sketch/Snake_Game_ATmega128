@@ -1,6 +1,16 @@
-# Snake Game ATmega128 — Prompt 10
+# Snake Game ATmega128 — Prompt 11
 
-Firmware Embedded C cho CodeVisionAVR. Source được sửa trên Ubuntu; Build All và tạo HEX trên Windows bằng CodeVisionAVR; sau đó kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của đúng source Prompt 10.
+Firmware Embedded C cho CodeVisionAVR. Source được sửa trên Ubuntu; Build All và tạo HEX trên Windows bằng CodeVisionAVR; sau đó kiểm tra Proteus trước khi nạp board. Workspace này chưa có kết quả Build All hoặc mô phỏng của đúng source Prompt 11.
+
+## Wrap Around (Prompt 11)
+
+EASY giữ luật va chạm biên. NORMAL và HARD xuyên cả bốn cạnh: phải `(13,y)→(0,y)`, trái `(0,y)→(13,y)`, trên `(x,0)→(x,7)`, dưới `(x,7)→(x,0)`. Mỗi tick vẫn đi một ô; hướng và tốc độ 500/300/150 ms không đổi. `main.c` chuyển Level đã chọn cho Snake lúc bắt đầu ván; Restart giữ Level. HARD chưa đảo đầu và đuôi; đó là phạm vi Prompt 12.
+
+Sau khi đổi tọa độ, Snake vẫn kiểm tra tường tĩnh, vật cản động và thân trước khi cập nhật mảng. Đi vào ô đuôi vừa rời được phép nếu không tăng chiều dài. Thức ăn CIRCLE/SQUARE/STAR và Bonus ở cạnh đối diện vẫn được xử lý theo luật cũ. Renderer vẽ từng đốt tại tọa độ ô, nên rắn có thể hiển thị ở cả hai cạnh mà không vẽ đường nối hoặc thêm framebuffer.
+
+Trong SURVIVAL, Safe Spawn dùng khoảng cách Manhattan ngắn nhất qua biên ở NORMAL/HARD; ô đầu sắp tới được lấy từ cùng hàm tính vị trí đã xuyên biên. BFS xem hai cạnh đối diện là kề nhau khi Level cho phép; EASY giữ BFS cũ. Không đổi layout CLASSIC/PILLARS/LABYRINTH, Timer1, GPIO hay EEPROM v4. Kỷ lục NORMAL/HARD cũ được giữ nguyên dù luật di chuyển mới có thể khiến điểm cũ và mới khác điều kiện đạt được.
+
+**Kiểm thử Proteus Prompt 11:** Build All trên CodeVisionAVR, gán HEX mới cho ATmega128 và đối chiếu clock. Ở EASY, thử đi ra cả bốn cạnh để thấy GAME_OVER. Ở NORMAL/HARD, thử cả bốn cạnh và xác nhận đầu xuất hiện đúng phía đối diện, vẫn cùng hướng và không tiến hai ô. Thử ô đích có thân/vật cản, ô đuôi vừa rời, từng loại Multi-Fruit, Bonus, Pause/Resume, Restart, TIME_ATTACK và SURVIVAL. Theo dõi LCD, LED và EEPROM sau reset MCU. Các kiểm thử Proteus này chưa chạy trong workspace; `sh tests/run_host_validation.sh` đã chạy đạt trên host.
 
 ## Multi-Fruit (Prompt 10)
 

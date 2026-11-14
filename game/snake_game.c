@@ -17,6 +17,7 @@ static SnakeDirection direction;
 static SnakeDirection next_direction;
 static unsigned char turn_queued;
 static SnakeState state;
+static GameLevel current_level=GAME_LEVEL_EASY;
 /* A nonzero 16-bit Galois LFSR state. It is pseudo-random, not true entropy. */
 static unsigned int rng_state=0xACE1u;
 
@@ -49,6 +50,27 @@ unsigned char snake_random_index(unsigned char count)
     return (unsigned char)(random_next()%count);
 }
 
+void snake_set_level(GameLevel level)
+{
+    if ((unsigned int)level>=3u) level=GAME_LEVEL_EASY;
+    current_level=level;
+}
+
+unsigned char snake_can_wrap(void)
+{
+    return (unsigned char)(current_level==GAME_LEVEL_NORMAL ||
+                           current_level==GAME_LEVEL_HARD);
+}
+
+static void wrap_position(signed int *x,signed int *y)
+{
+    if (!snake_can_wrap()) return;
+    if (*x<0) *x=GRID_COLS-1;
+    else if (*x>=GRID_COLS) *x=0;
+    if (*y<0) *y=GRID_ROWS-1;
+    else if (*y>=GRID_ROWS) *y=0;
+}
+
 void snake_next_head(signed int *x,signed int *y)
 {
     SnakeDirection heading=turn_queued ? next_direction : direction;
@@ -58,6 +80,7 @@ void snake_next_head(signed int *x,signed int *y)
     else if (heading==DIR_DOWN) ++*y;
     else if (heading==DIR_LEFT) --*x;
     else ++*x;
+    wrap_position(x,y);
 }
 
 void snake_mix_entropy(unsigned long now_ms)
@@ -198,6 +221,8 @@ unsigned char snake_step(void)
     else if (direction==DIR_DOWN) ++new_y;
     else if (direction==DIR_LEFT) --new_x;
     else ++new_x;
+
+    wrap_position(&new_x,&new_y);
 
     if (new_x<0 || new_x>=GRID_COLS || new_y<0 || new_y>=GRID_ROWS) {
         state=SNAKE_GAME_OVER;

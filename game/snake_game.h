@@ -3,6 +3,7 @@
 
 #include "../drivers/keypad.h"
 #include "../config/board_config.h"
+#include "game_menu.h"
 
 #define SNAKE_INITIAL_LENGTH 3
 #define SNAKE_MAX_LENGTH (GRID_COLS*GRID_ROWS)
@@ -27,6 +28,8 @@ typedef enum {
 } SnakeState;
 
 void snake_init(void);
+void snake_set_level(GameLevel level);
+unsigned char snake_can_wrap(void);
 void snake_handle_key(KeyEvent key);
 unsigned char snake_step(void);
 SnakeState snake_state(void);
