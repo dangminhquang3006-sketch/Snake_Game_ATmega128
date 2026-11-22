@@ -50,7 +50,7 @@
 #error Enable only one peripheral test mode at a time
 #endif
 
-/* 7SEG-CA: docs/so_do_chan_mach.jpeg. Masks avoid CVAVR bit-selector macros. */
+/* Shared 7SEG bus: docs/so_do_chan_mach.jpeg. CA/CC is selected at runtime. */
 #define LED7_DIGIT1_MASK (1u<<0) /* PF0, pin 61 */
 #define LED7_DIGIT2_MASK (1u<<3) /* PF3, pin 58 */
 #define LED7_DIGIT3_MASK (1u<<4) /* PF4, pin 57 */
@@ -67,9 +67,11 @@
 #define LED7_SEG_F_PORT_MASK (LED7_SEG_A_MASK|LED7_SEG_B_MASK|LED7_SEG_F_MASK|LED7_SEG_DP_MASK)
 #define LED7_SEG_D_PORT_MASK (LED7_SEG_D_MASK|LED7_SEG_E_MASK|LED7_SEG_G_MASK)
 
-/* Direct common-anode default: digit high, segment low. Verify in Proteus. */
-#define LED7_DIGIT_ON_LEVEL 1
-#define LED7_SEGMENT_ON_LEVEL 0
+/* BT1=PB2 (pin 12), BT2=PB3 (pin 13), active low with pull-ups. */
+#define LED7_BT1_MASK (1u<<2)
+#define LED7_BT2_MASK (1u<<3)
+#define LED7_MODE_BUTTONS_MASK (LED7_BT1_MASK|LED7_BT2_MASK)
+#define LED7_MODE_DEBOUNCE_MS 20UL
 
 #define GRID_COLS 14
 #define GRID_ROWS 8

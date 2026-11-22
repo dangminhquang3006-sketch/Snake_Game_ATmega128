@@ -29,6 +29,17 @@ Chọn **NORMAL hoặc HARD → Map → bắt đầu chơi**, không có bước
 
 Dùng **2/8** để chọn lên/xuống trong menu, **5** xác nhận. Trong game: **2/4/6/8** đổi hướng, **9** chơi lại. Phím **1** quay lại bước chọn trước trong menu Map hoặc về menu Level sau khi thắng/thua.
 
+## Chọn kiểu LED 7 đoạn CA/CC
+
+- **BT1 — PB2, chân 12:** chọn Common-Anode (CA).
+- **BT2 — PB3, chân 13:** chọn Common-Cathode (CC).
+- Hai nút nhấn xuống GND, dùng pull-up nội; chống dội 20 ms, cần nhả trước lần nhấn tiếp theo.
+- CA đảo mẫu segment bằng NOT, digit chọn mức cao. CC giữ mẫu segment, digit chọn mức thấp.
+- Lựa chọn được lưu tại EEPROM `0x03F0`, khôi phục khi khởi động. Dữ liệu chưa hợp lệ thì dùng CA; không ghi lặp khi giữ nút hoặc chọn lại mode đã lưu.
+- Có thể đổi mode ở menu, khi chơi hoặc ở màn kết quả. Nếu nhấn cả hai nút thì bỏ qua đến khi nhả hết.
+
+Hai cụm CA/CC trong mạch hiện dùng chung các net `7SLED`; lựa chọn này đổi cực tính bus. Để điều khiển bật/tắt từng cụm độc lập cần có đường enable hoặc mạch cách ly riêng.
+
 ## Các file cần thêm vào CodeVisionAVR
 
 Chọn một trong hai cách:
@@ -55,4 +66,4 @@ Bản gộp được sinh từ đúng 7 file của Cách 1, có cùng logic và 
 
 ## Tài liệu giải thích tính năng
 
-Xem [danh mục 10 tài liệu tính năng](tinh_nang/TINH_NANG.md#9-tài-liệu-giải-thích-chi-tiết-từng-tính-năng). Mỗi file có ví dụ minh họa và giải thích chi tiết cách chương trình thực hiện; gồm menu, map, keypad, xuyên biên, ăn mồi, đảo đầu–đuôi, vật cản, WIN/GAME OVER và hiển thị.
+Xem [danh mục 11 tài liệu tính năng](tinh_nang/TINH_NANG.md#9-tài-liệu-giải-thích-chi-tiết-từng-tính-năng). Mỗi file có ví dụ minh họa và giải thích chi tiết cách chương trình thực hiện; gồm menu, map, keypad, xuyên biên, ăn mồi, đảo đầu–đuôi, vật cản, WIN/GAME OVER, hiển thị và chọn CA/CC.

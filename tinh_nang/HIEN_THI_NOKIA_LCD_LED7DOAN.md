@@ -52,7 +52,7 @@ LED dùng nhiều bit rải trên PORTA, PORTD, PORTF:
 | Segment D, E, F, G | PD1, PD2, PF2, PD3 |
 | DP | PF7, được giữ tắt |
 
-Các mask trong [config/board_config.h](../config/board_config.h) mô tả đúng các bit này. Mức cấu hình hiện tại là chọn digit bằng 1 và bật segment bằng 0 cho LED common-anode trực tiếp.
+Các mask trong [config/board_config.h](../config/board_config.h) mô tả đúng các bit này. BT1 (PB2) chọn CA, BT2 (PB3) chọn CC. CA chọn digit bằng 1, segment sáng ở 0; CC chọn digit bằng 0, segment sáng ở 1. Mode được khôi phục từ EEPROM khi khởi tạo.
 
 ### 2.3. Khởi tạo Nokia và font
 
@@ -187,44 +187,41 @@ Các bit trong mẫu là ý nghĩa “đoạn cần sáng”, chưa phải mức
 ```c
 static void segment_out(unsigned char pattern)
 {
-    unsigned char f_on=0;
-    unsigned char d_on=0;
-    unsigned char a_on=0;
+    unsigned char f_bits=0;
+    unsigned char d_bits=0;
+    unsigned char a_bits=0;
+    unsigned char levels;
 
-    if (pattern&0x01) f_on |= LED7_SEG_A_MASK;
-    if (pattern&0x02) f_on |= LED7_SEG_B_MASK;
-    if (pattern&0x04) a_on |= LED7_SEG_C_MASK;
-    if (pattern&0x08) d_on |= LED7_SEG_D_MASK;
-    if (pattern&0x10) d_on |= LED7_SEG_E_MASK;
-    if (pattern&0x20) f_on |= LED7_SEG_F_MASK;
-    if (pattern&0x40) d_on |= LED7_SEG_G_MASK;
+    /* CA segments are active low; CC segments are active high.
+       Invert the 8-bit logical pattern, not the unrelated GPIO bits. */
+    levels=(display_mode==LED7_MODE_CA) ? (unsigned char)~pattern : pattern;
+    if (levels&0x01u) f_bits |= LED7_SEG_A_MASK;
+    if (levels&0x02u) f_bits |= LED7_SEG_B_MASK;
+    if (levels&0x04u) a_bits |= LED7_SEG_C_MASK;
+    if (levels&0x08u) d_bits |= LED7_SEG_D_MASK;
+    if (levels&0x10u) d_bits |= LED7_SEG_E_MASK;
+    if (levels&0x20u) f_bits |= LED7_SEG_F_MASK;
+    if (levels&0x40u) d_bits |= LED7_SEG_G_MASK;
+    if (levels&0x80u) f_bits |= LED7_SEG_DP_MASK;
 
     /* ALCD owns PA0..PA6; only PA7 is changed here. */
     DDRA |= LED7_SEG_C_MASK;
-    if (LED7_SEGMENT_ON_LEVEL) {
-        PORTF=(PORTF & (unsigned char)~LED7_SEG_F_PORT_MASK) | f_on;
-        PORTD=(PORTD & (unsigned char)~LED7_SEG_D_PORT_MASK) | d_on;
-        PORTA=(PORTA & (unsigned char)~LED7_SEG_C_MASK) | a_on;
-    } else {
-        PORTF=(PORTF & (unsigned char)~LED7_SEG_F_PORT_MASK) |
-              ((unsigned char)~f_on & LED7_SEG_F_PORT_MASK);
-        PORTD=(PORTD & (unsigned char)~LED7_SEG_D_PORT_MASK) |
-              ((unsigned char)~d_on & LED7_SEG_D_PORT_MASK);
-        PORTA=(PORTA & (unsigned char)~LED7_SEG_C_MASK) |
-              ((unsigned char)~a_on & LED7_SEG_C_MASK);
-    }
+    PORTF=(PORTF & (unsigned char)~LED7_SEG_F_PORT_MASK) | f_bits;
+    PORTD=(PORTD & (unsigned char)~LED7_SEG_D_PORT_MASK) | d_bits;
+    PORTA=(PORTA & (unsigned char)~LED7_SEG_C_MASK) | a_bits;
 }
 ```
 
-`f_on`, `d_on`, `a_on` gộp các bit cần bật của từng port. Với mức segment-on bằng 0, driver đảo các bit thuộc segment để xuất thấp cho đoạn sáng, cao cho đoạn tắt.
+`levels` là mẫu điện áp: CA dùng `(unsigned char)~pattern`, CC giữ `pattern`. `f_bits`, `d_bits`, `a_bits` ánh xạ tám bit A..G và DP vào các GPIO tương ứng. Driver chỉ đảo mẫu segment, không đảo cả port có chân LCD hoặc keypad dùng chung.
 
-Phép `(PORT & ~mask) | new_bits` chỉ sửa các bit trong mask và giữ các chân khác. Ví dụ phần LED trên PORTD không sửa PD0 của keypad hoặc PD7 của đèn nền. Trên PORTA, driver LED chỉ sửa PA7, giữ PA0..PA6 cho LCD. DP không được thêm vào mẫu sáng nên được giữ tắt theo mức cấu hình.
+Phép `(PORT & ~mask) | new_bits` chỉ sửa các bit trong mask và giữ các chân khác. Ví dụ phần LED trên PORTD không sửa PD0 của keypad hoặc PD7 của đèn nền. Trên PORTA, driver LED chỉ sửa PA7, giữ PA0..PA6 cho LCD. Bit DP trong mẫu logic luôn bằng 0, nên sau chuyển cực tính nó được xuất cao ở CA, thấp ở CC để luôn tắt.
 
 ### 2.10. Quét luân phiên bốn digit
 
 ```c
 void led7seg_scan(unsigned long now_ms)
 {
+    mode_buttons_update(now_ms);
     if (!enabled) return;
     if (scan_started && (unsigned long)(now_ms-last_scan_ms)<LED7_SCAN_MS) return;
     digit_off_all();
@@ -239,7 +236,7 @@ void led7seg_scan(unsigned long now_ms)
 }
 ```
 
-Mỗi lần đến chu kỳ `LED7_SCAN_MS=2` ms:
+`led7seg_scan()` phục vụ BT1/BT2 trước khi kiểm tra quét digit. Hai nút có chống dội 20 ms và khóa đến khi nhả ổn định. Mỗi lần đến chu kỳ `LED7_SCAN_MS=2` ms:
 
 1. Tắt tất cả digit trước khi đổi mẫu, giảm việc mẫu của digit cũ xuất nhầm ở digit mới.
 2. Tăng `current_digit`, quay vòng bằng `&3u`; lần đầu chọn digit 0.
@@ -247,7 +244,7 @@ Mỗi lần đến chu kỳ `LED7_SCAN_MS=2` ms:
 4. Bật đúng digit tương ứng.
 5. Ghi lại `last_scan_ms`.
 
-Nếu phục vụ đều, 4 digit mất khoảng 8 ms cho một vòng, tương ứng khoảng 125 vòng/giây. Đây là chu kỳ danh định từ cấu hình, không phải tần số đã đo; vẽ GLCD hoặc ghi LCD trong vòng chính có thể kéo dài khoảng cách giữa các lần quét.
+Nếu phục vụ đều, 4 digit mất khoảng 8 ms cho một vòng, tương ứng khoảng 125 vòng/giây. Đây là chu kỳ danh định từ cấu hình, không phải tần số đã đo; vẽ GLCD, ghi LCD hoặc lưu mode EEPROM trong vòng chính có thể kéo dài khoảng cách giữa các lần quét. Các digit được tắt trong lúc ghi EEPROM.
 
 Hàm không sinh bù nhiều lần quét khi bị trễ. Nó chuyển một digit ở một lần gọi đủ thời gian.
 
@@ -331,3 +328,5 @@ Nếu trạng thái mới tới khi cập nhật cũ chưa xong, desired nhận 
 | Restart | Vẽ ván mới | Về 0000 | Hiện trạng thái ván mới |
 
 Toàn bộ cách xuất dữ liệu dựa trên biến game và cờ cập nhật. Việc một màn hình chưa được vẽ lại ngay không tự làm thay đổi trạng thái logic của rắn; xử lý gameplay và chuẩn bị hiển thị là hai bước được gọi theo thứ tự trong vòng chính.
+
+Chi tiết chọn cực tính và lưu cấu hình nằm trong [CHE_DO_LED_CA_CC.md](CHE_DO_LED_CA_CC.md). Hai cụm CA/CC trên mạch dùng chung bus `7SLED`; mode thay đổi cực tính của bus, không cung cấp đường enable độc lập cho từng cụm.

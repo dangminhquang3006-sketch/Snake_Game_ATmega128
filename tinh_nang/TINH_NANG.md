@@ -65,12 +65,14 @@ Keypad có chống dội phím; giữ phím không tạo liên tiếp nhiều s�
 | Thiết bị | Nội dung |
 |---|---|
 | Nokia 5110, 84×48 pixel | Menu, vùng chơi 14×8 ô, rắn, mồi, tường, rào chắn và kết quả |
-| LED 7 đoạn, 4 chữ số | Điểm hiện tại |
+| LED 7 đoạn, 4 chữ số | Điểm hiện tại; BT1 chọn CA, BT2 chọn CC, lưu mode trong EEPROM |
 | LCD 16×2 | Chế độ, map, số rào chắn, trạng thái PLAYING, lựa chọn menu và kết quả cuối ván |
+
+Mode được đọc lại từ EEPROM khi khởi động. CA dùng NOT cho mẫu segment và digit active-high; CC giữ mẫu segment và digit active-low. Lưu cấu hình hiển thị không lưu điểm hay kỷ lục.
 
 ## 8. Trạng thái kiểm thử
 
-Mã nguồn hiện tại đã đạt **3 nhóm kiểm thử host**: logic rắn, rào chắn và LCD giả lập. Đã kiểm tra cả 6 tổ hợp và cú pháp toàn firmware qua bộ chuyển cú pháp dành cho host.
+Mã nguồn hiện tại đã đạt **4 nhóm kiểm thử host**: logic rắn, rào chắn, LCD giả lập và LED CA/CC kèm EEPROM cấu hình giả lập. Đã kiểm tra cả 6 tổ hợp và cú pháp toàn firmware qua bộ chuyển cú pháp dành cho host.
 
 Chưa Build All bằng CodeVisionAVR, chạy Proteus hoặc kiểm tra board thật cho phiên bản mới nhất. Kết quả host không thay thế kiểm tra trên MCU.
 
@@ -90,5 +92,6 @@ Các tài liệu dưới đây mô tả cách chương trình hiện tại thự
 | 8 | [Chiến thắng — WIN](CHIEN_THANG_WIN.md) | Sức chứa theo map/vật cản, lần ăn cuối và xử lý kết quả |
 | 9 | [Chết — GAME OVER](CHET_VA_GAME_OVER.md) | Va chạm, quy tắc ô đuôi, dừng ván, kết quả, Restart và về menu |
 | 10 | [Hiển thị trên ba thiết bị](HIEN_THI_NOKIA_LCD_LED7DOAN.md) | Vẽ Nokia, quét LED 7 đoạn, cập nhật LCD từng ký tự và phối hợp trong vòng chính |
+| 11 | [Chọn CA/CC và lưu cấu hình LED](CHE_DO_LED_CA_CC.md) | BT1/BT2, chống dội, cực tính segment/digit, EEPROM và khôi phục sau reset |
 
 “Chuyển màn hình” ở đây là đổi giữa menu Level, menu Map, màn chơi và kết quả. Bản hiện tại không tự chuyển sang map khác khi đạt một mốc điểm hoặc thắng ván.

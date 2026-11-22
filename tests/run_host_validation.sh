@@ -22,4 +22,9 @@ host_cc=${CC:-cc}
     "$repo_dir/tests/host_lcd.c" -o "$output_dir/host_lcd"
 "$output_dir/host_lcd"
 
+"$host_cc" -DHOST_TEST -std=c89 -Wall -Wextra -Werror -I"$repo_dir/tests/mock" \
+    "$repo_dir/drivers/led7seg.c" "$repo_dir/tests/mock_avr.c" \
+    "$repo_dir/tests/host_led7seg.c" -o "$output_dir/host_led7seg"
+"$output_dir/host_led7seg"
+
 echo "Host validation binaries: $output_dir"
