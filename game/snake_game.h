@@ -21,10 +21,8 @@ typedef enum {
 
 typedef enum {
     SNAKE_RUNNING=0,
-    SNAKE_PAUSED,
     SNAKE_GAME_OVER,
-    SNAKE_WIN,
-    SNAKE_TIME_UP
+    SNAKE_WIN
 } SnakeState;
 
 void snake_init(void);
@@ -40,7 +38,6 @@ FoodType snake_get_food_type(void);
 FoodType snake_food_type_from_roll(unsigned char roll);
 unsigned int snake_get_score(void);
 void snake_mix_entropy(unsigned long now_ms);
-void snake_time_up(void);
 void snake_next_head(signed int *x,signed int *y);
 unsigned char snake_random_index(unsigned char count);
 

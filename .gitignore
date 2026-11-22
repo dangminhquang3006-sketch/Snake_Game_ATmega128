@@ -17,3 +17,8 @@ Output/
 
 # VS Code local settings
 .vscode/
+tools/
+tests/*
+!tests/host_led7seg.c
+!tests/mock_avr.c
+!tests/run_export_validation.py

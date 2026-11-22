@@ -50,7 +50,7 @@
 #error Enable only one peripheral test mode at a time
 #endif
 
-/* 7SEG-CA: docs/so_do_chan_mach.jpeg. Masks avoid CVAVR bit-selector macros. */
+/* Shared 7SEG bus: docs/so_do_chan_mach.jpeg. CA/CC is selected at runtime. */
 #define LED7_DIGIT1_MASK (1u<<0) /* PF0, pin 61 */
 #define LED7_DIGIT2_MASK (1u<<3) /* PF3, pin 58 */
 #define LED7_DIGIT3_MASK (1u<<4) /* PF4, pin 57 */
@@ -67,18 +67,32 @@
 #define LED7_SEG_F_PORT_MASK (LED7_SEG_A_MASK|LED7_SEG_B_MASK|LED7_SEG_F_MASK|LED7_SEG_DP_MASK)
 #define LED7_SEG_D_PORT_MASK (LED7_SEG_D_MASK|LED7_SEG_E_MASK|LED7_SEG_G_MASK)
 
-/* Direct common-anode default: digit high, segment low. Verify in Proteus. */
-#define LED7_DIGIT_ON_LEVEL 1
-#define LED7_SEGMENT_ON_LEVEL 0
-#define LED7_SCAN_MS 2UL
+/* BT1=PB2 (pin 12), BT2=PB3 (pin 13), active low with pull-ups. */
+#define LED7_BT1_MASK (1u<<2)
+#define LED7_BT2_MASK (1u<<3)
+#define LED7_MODE_BUTTONS_MASK (LED7_BT1_MASK|LED7_BT2_MASK)
+#define LED7_MODE_DEBOUNCE_MS 20UL
 
 #define GRID_COLS 14
 #define GRID_ROWS 8
 #define CELL_SIZE 6
-#define GAME_MAX_SCORE ((GRID_COLS*GRID_ROWS-3u)*10u)
-/* Movement periods are selected by game_get_move_period(). */
-#define GAME_EASY_MOVE_MS 500u
+/* Timing configuration. All *_MS values are in milliseconds. */
+/* Toc do ran: thoi gian di chuyen mot o, theo Level. */
 #define GAME_NORMAL_MOVE_MS 300u
-#define GAME_HARD_MOVE_MS 150u
+#define GAME_HARD_MOVE_MS 250u
+
+/* Both levels: running time between obstacle attempts. */
+#define DYNAMIC_OBSTACLE_INTERVAL_MS 10000UL
+
+/* Peripheral service and diagnostic screen periods. */
+#define KEY_DEBOUNCE_MS 20UL
+#define LED7_SCAN_MS 2UL
+#define PERIPHERAL_TEST_CHANGE_MS 2000UL
+
+/* Fixed Timer1 hardware contract: 1 ms tick, CTC with clock/64.
+   CPU clock is supplied by the CodeVisionAVR project. These must match
+   timer_get_ms() units and the CS11/CS10 register bits in timer.c. */
+#define TIMER1_TICKS_PER_SECOND 1000UL
+#define TIMER1_CLOCK_PRESCALER 64UL
 
 #endif

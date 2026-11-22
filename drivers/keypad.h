@@ -7,7 +7,7 @@ typedef enum {
     KEY_DOWN,
     KEY_LEFT,
     KEY_RIGHT,
-    KEY_PAUSE,
+    KEY_CONFIRM,
     KEY_RESTART,
     KEY_MENU
 } KeyEvent;

@@ -9,6 +9,7 @@ unsigned char dynamic_obstacle_is_blocked(signed int x,signed int y);
 unsigned char dynamic_obstacle_get_count(void);
 unsigned char dynamic_obstacle_playable_cells(void);
 unsigned char dynamic_obstacle_candidate_valid(unsigned char x,unsigned char y);
+/* Left endpoint of a bar; get_count counts bars, not occupied cells. */
 SnakePoint dynamic_obstacle_point(unsigned char index);
 
 #endif

@@ -6,32 +6,20 @@ static char desired[32];
 static char shown[32];
 static unsigned char next_position=0;
 
-static flash char easy_name[]="EASY";
 static flash char normal_name[]="NORMAL";
 static flash char hard_name[]="HARD";
 static flash char select_line[]="SELECT LEVEL";
-static flash char best_prefix[]="BEST:";
 static flash char playing_line2[]="STATUS: PLAYING";
 static flash char title_line[]="SNAKE GAME";
-static flash char paused_line2[]="GAME PAUSED";
 static flash char over_line1[]="GAME OVER";
 static flash char win_line1[]="YOU WIN!";
 static flash char score_prefix[]="SCORE: ";
 static flash char ready_line2[]="STATUS: READY";
-static flash char map_prefix[]="MAP: ";
+static flash char select_map_line[]="SELECT MAP";
 static flash char classic_name[]="CLASSIC";
 static flash char pillars_name[]="PILLARS";
 static flash char labyrinth_name[]="LABYRINTH";
-static flash char mode_prefix[]="MODE:";
-static flash char standard_name[]="STANDARD";
-static flash char bonus_name[]="BONUS";
-static flash char attack_name[]="TIME ATTACK";
-static flash char survival_name[]="SURVIVAL";
-static flash char survival_paused[]="SURVIVAL PAUSED";
 static flash char obst_playing[]="OBST:00 PLAYING";
-static flash char obst_paused[]="OBSTACLES: 00";
-static flash char time_prefix[]="TIME: 0";
-static flash char time_up_line[]="TIME UP!";
 
 static void spaces(void)
 {
@@ -52,16 +40,12 @@ static void copy_flash(unsigned char offset, flash char *text)
 
 static unsigned char copy_level(unsigned char offset, GameLevel level)
 {
-    if (level==GAME_LEVEL_NORMAL) {
-        copy_flash(offset,normal_name);
-        return 6;
-    }
     if (level==GAME_LEVEL_HARD) {
         copy_flash(offset,hard_name);
         return 4;
     }
-    copy_flash(offset,easy_name);
-    return 4;
+    copy_flash(offset,normal_name);
+    return 6;
 }
 
 static void copy_map(unsigned char offset, MapId map)
@@ -99,48 +83,24 @@ void lcd1602_init(void)
     next_position=0;
 }
 
-void lcd1602_show_menu(GameLevel level, unsigned int best)
+void lcd1602_show_menu(GameLevel level)
 {
-    unsigned char length,offset;
     spaces();
     copy_flash(0,select_line);
-    length=copy_level(16,level);
-    offset=(unsigned char)(16+length+1);
-    copy_flash(offset,best_prefix);
-    put_four_digits((unsigned char)(offset+5),best);
+    copy_level(16,level);
 }
 
-void lcd1602_show_map_menu(MapId map, unsigned int best)
+void lcd1602_show_map_menu(MapId map)
 {
     spaces();
-    copy_flash(0,map_prefix);
-    copy_map(5,map);
-    copy_flash(16,best_prefix);
-    put_four_digits(22,best);
-}
-
-void lcd1602_show_mode_menu(GameMode mode, unsigned int best)
-{
-    spaces();
-    copy_flash(0,mode_prefix);
-    if (mode==MODE_BONUS) copy_flash(5,bonus_name);
-    else if (mode==MODE_TIME_ATTACK) copy_flash(5,attack_name);
-    else if (mode==MODE_SURVIVAL) copy_flash(5,survival_name);
-    else copy_flash(5,standard_name);
-    copy_flash(16,best_prefix);
-    put_four_digits(22,best);
+    copy_flash(0,select_map_line);
+    copy_map(16,map);
 }
 
 void lcd1602_show_playing(GameLevel level, MapId map)
 {
     show_game_line(level,map);
     copy_flash(16,playing_line2);
-}
-
-void lcd1602_show_paused(GameLevel level, MapId map)
-{
-    show_game_line(level,map);
-    copy_flash(16,paused_line2);
 }
 
 void lcd1602_show_result(unsigned char won, unsigned int score)
@@ -153,44 +113,13 @@ void lcd1602_show_result(unsigned char won, unsigned int score)
     put_four_digits(23,score);
 }
 
-void lcd1602_show_time(unsigned char seconds, unsigned char paused)
+void lcd1602_show_obstacles(GameLevel level,MapId map,
+                            unsigned char obstacles)
 {
-    spaces();
-    if (seconds>60u) seconds=60u;
-    copy_flash(0,time_prefix);
-    desired[7]=(char)('0'+seconds/60u);
-    desired[8]=':';
-    desired[9]=(char)('0'+(seconds%60u)/10u);
-    desired[10]=(char)('0'+seconds%10u);
-    if (paused) copy_flash(16,paused_line2);
-    else copy_flash(16,playing_line2);
-}
-
-void lcd1602_show_time_up(unsigned int score)
-{
-    spaces();
-    copy_flash(0,time_up_line);
-    copy_flash(16,score_prefix);
-    put_four_digits(23,score);
-}
-
-void lcd1602_show_survival(GameLevel level,unsigned char obstacles,
-                           unsigned char paused)
-{
-    spaces();
-    if (paused) {
-        copy_flash(0,survival_paused);
-        copy_flash(16,obst_paused);
-        desired[27]=(char)('0'+obstacles/10u);
-        desired[28]=(char)('0'+obstacles%10u);
-    } else {
-        copy_flash(0,survival_name);
-        desired[8]=' ';
-        copy_level(9,level);
-        copy_flash(16,obst_playing);
-        desired[21]=(char)('0'+obstacles/10u);
-        desired[22]=(char)('0'+obstacles%10u);
-    }
+    show_game_line(level,map);
+    copy_flash(16,obst_playing);
+    desired[21]=(char)('0'+obstacles/10u);
+    desired[22]=(char)('0'+obstacles%10u);
 }
 
 void lcd1602_show_test_ready(void)

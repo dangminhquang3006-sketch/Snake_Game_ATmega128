@@ -16,7 +16,7 @@ unsigned char display_init(void)
     init_data.readxmem=0;
     init_data.writexmem=0;
     init_data.temp_coef=0;
-    init_data.bias=4;
+    init_data.bias=2;
     init_data.vlcd=NOKIA_CONTRAST;
 
     return (unsigned char)glcd_init(&init_data);

@@ -1,9 +1,14 @@
 #include <mega128.h>
+#include "../config/board_config.h"
 #include "timer.h"
 
-/* 1 ms tick: F_CPU / 64 / 1000 - 1. Clock comes from CVAVR project. */
-#define TIMER1_TOP ((_MCU_CLOCK_FREQUENCY_ / 64000UL) - 1UL)
-#if (_MCU_CLOCK_FREQUENCY_ % 64000UL) != 0
+/* Keep the millisecond API and hardware prescaler in sync with config. */
+#if TIMER1_TICKS_PER_SECOND != 1000UL || TIMER1_CLOCK_PRESCALER != 64UL
+#error Timer1 requires a 1 ms tick and clock/64 prescaler
+#endif
+#define TIMER1_CLOCK_DIVISOR (TIMER1_CLOCK_PRESCALER*TIMER1_TICKS_PER_SECOND)
+#define TIMER1_TOP ((_MCU_CLOCK_FREQUENCY_ / TIMER1_CLOCK_DIVISOR) - 1UL)
+#if (_MCU_CLOCK_FREQUENCY_ % TIMER1_CLOCK_DIVISOR) != 0
 #error CPU clock must produce an exact 1 ms Timer1 tick with prescaler 64
 #endif
 #if TIMER1_TOP > 65535UL

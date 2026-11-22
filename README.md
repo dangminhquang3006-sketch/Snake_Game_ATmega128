@@ -1,93 +1,69 @@
 # Snake Game trên ATmega128
 
-Project firmware trò chơi rắn săn mồi viết bằng Embedded C cho **ATmega128** và **CodeVisionAVR**. Mã nguồn được quản lý trên Ubuntu; firmware được biên dịch trên Windows bằng CodeVisionAVR, kiểm tra với Proteus rồi mới nạp lên board thực tế.
+Trò chơi rắn săn mồi viết bằng Embedded C cho ATmega128, biên dịch bằng CodeVisionAVR. Nokia 5110 hiển thị game, keypad 3×3 điều khiển, LED 7 đoạn hiển thị điểm và LCD 16×2 hiển thị trạng thái.
 
-## Phần cứng
+## Phần 1. Hai chế độ chơi
 
-| Thành phần | Vai trò |
-|---|---|
-| Nokia 5110 (PCD8544, 84×48) | Hiển thị menu và vùng chơi 14×8 ô |
-| Keypad 3×3 | Chọn menu và điều khiển rắn |
-| LED 7 đoạn anode chung, 4 chữ số | Hiển thị điểm hiện tại |
-| LCD 16×2 | Hiển thị cấp độ, trạng thái, thời gian và kỷ lục |
-| Timer1 | Tạo system tick 1 ms |
-| EEPROM nội | Lưu điểm cao nhất |
+Cả bản 7 file gốc và bản gộp 2 file đều có hai chế độ NORMAL và HARD; mặc định là NORMAL.
 
-Sơ đồ chân nằm trong [board_config.h](config/board_config.h) và tài liệu ở [docs/](docs/). Nokia dùng PG0–PG4 và PD7; keypad dùng PC6, PE1, PD0, PC4, PC5, PE0. Giữ nguyên pin mapping của board và schematic khi build hoặc mô phỏng.
-
-## Luật chơi
-
-Người chơi chọn **Level → Map → Mode** trước khi bắt đầu. Rắn tự di chuyển theo chu kỳ của Level; phím điều hướng chỉ đổi hướng, không cho quay ngược trực tiếp vào thân.
-
-| Level | Chu kỳ | Luật riêng |
-|---|---:|---|
-| EASY | 500 ms/ô | Chạm biên là Game Over |
-| NORMAL | 300 ms/ô | Xuyên qua hai cạnh đối diện |
-| HARD | 150 ms/ô | Xuyên biên; đảo đầu và đuôi sau khi ăn thức ăn thường |
-
-Có ba Map: **CLASSIC** không có tường cố định, **PILLARS** có các cụm cột, và **LABYRINTH** có hành lang. Có bốn Mode:
-
-| Mode | Luật riêng |
-|---|---|
-| STANDARD | Chơi thông thường |
-| BONUS | Có Bonus Food sau mỗi ba lần ăn thức ăn thường; Bonus tồn tại 5 giây RUNNING |
-| TIME_ATTACK | Như BONUS, thêm giới hạn 60 giây RUNNING |
-| SURVIVAL | Thử sinh thêm một vật cản mỗi 20 giây RUNNING, tối đa 8; không có Bonus |
-
-Thức ăn thường được chọn bằng PRNG hiện có. Mọi loại đều tăng chiều dài rắn một đốt:
-
-| Loại | Xác suất | Điểm |
-|---|---:|---:|
-| CIRCLE | 60% | +10 |
-| SQUARE | 35% | +20 |
-| STAR | 5% | +50 |
-
-**Bonus Food** cộng 30 điểm, không tăng chiều dài và không kích hoạt đảo rắn. Rắn thua khi đâm vào thân hoặc vật cản; ở EASY, đi ra ngoài biên cũng gây Game Over. Khi chiếm hết các ô chơi hợp lệ, game chuyển sang WIN. Pause giữ nguyên trạng thái và dừng thời gian gameplay; Restart bắt đầu lại với Level, Map và Mode đã chọn.
-
-### Điều khiển
-
-| Phím | Trong menu | Trong game |
+| Chế độ | Tốc độ | Luật chơi |
 |---|---|---|
-| 2 / 8 | Chọn lên / xuống | Đi lên / xuống |
-| 4 / 6 | — | Đi trái / phải |
-| 5 | Xác nhận | Pause / Resume |
-| 9 | — | Restart |
-| 1 | Quay lại khi menu hỗ trợ | Về menu Level sau Game Over, WIN hoặc TIME_UP |
+| NORMAL | 300 ms/ô | Đi qua một cạnh sẽ xuất hiện ở cạnh đối diện |
+| HARD | 250 ms/ô | Xuyên biên và đảo đầu–đuôi sau khi ăn thức ăn, nếu chưa thắng |
 
-## Cấu trúc source
+Cả NORMAL và HARD đều thử sinh thêm một rào chắn ngang dài 3 ô mỗi **10 giây đang chơi**, tối đa 8 rào chắn. Nếu không có vị trí hợp lệ thì bỏ qua lượt sinh; chơi lại xóa rào chắn và đặt lại thời gian.
 
-```text
-.
-├── main.c                     # Vòng lặp chính và điều phối trạng thái
-├── config/board_config.h      # Cấu hình board và hằng số
-├── drivers/                   # Nokia, keypad, Timer1, LED 7 đoạn, LCD 16×2
-├── game/                      # Snake, render, menu, Map, Mode, Bonus, vật cản động
-├── storage/highscore_eeprom.c # Điểm cao nhất trong EEPROM
-├── tests/                     # Kiểm thử logic trên host; không đưa vào firmware
-└── docs/                      # Sơ đồ, tài liệu kiến trúc và báo cáo kiểm thử
-```
+Ở cả hai chế độ, rắn thua khi đâm vào thân hoặc vật cản; chiếm hết các ô chơi hợp lệ thì thắng.
 
-`main.c` gọi các module trong `drivers/`, `game/` và `storage/`. ISR Timer1 chỉ cập nhật tick; xử lý game, vẽ màn hình và ghi EEPROM diễn ra trong vòng lặp chính. EEPROM v4 lưu kỷ lục riêng cho **36 tổ hợp** Level × Map × Mode và giữ đường đọc dữ liệu v1–v3. Kỷ lục chỉ được ghi khi có điểm mới cao hơn.
+## Phần 2. Ba bản đồ (Map)
 
-## Build bằng CodeVisionAVR
+| Map | Đặc điểm |
+|---|---|
+| CLASSIC | Không có tường cố định, gồm 112 ô chơi |
+| PILLARS | Có các cụm cột chắn, còn 104 ô chơi |
+| LABYRINTH | Có các vách tạo hành lang, còn 100 ô chơi |
 
-1. Mở project ATmega128 hiện có trong CodeVisionAVR. Kiểm tra CPU clock khớp với Proteus hoặc board.
-2. Đảm bảo project có đủ 14 file `.c`: `main.c`; `drivers/display.c`, `keypad.c`, `timer.c`, `led7seg.c`, `lcd1602.c`; `game/snake_game.c`, `game_render.c`, `game_menu.c`, `game_map.c`, `game_mode.c`, `bonus_food.c`, `dynamic_obstacle.c`; `storage/highscore_eeprom.c`.
-3. Kiểm tra cấu hình `glcd.h` cho PCD8544 với font `font5x7`, `alcd.h` ở chế độ 4 bit và các include path của project. Bốn macro test ngoại vi trong `board_config.h` phải bằng `0` khi build game.
-4. Chạy **Project → Build All**. Xem lỗi, cảnh báo, bộ nhớ sử dụng, EEPROM memory map và đường dẫn file HEX mới.
+Số ô trên được tính trước khi sinh rào chắn.
 
-Không thêm `tests/` hoặc `tests/mock/` vào project CodeVisionAVR. Firmware không dùng AVR-GCC, Arduino, C++ hoặc Makefile để build.
+Chọn **NORMAL hoặc HARD → Map → bắt đầu chơi**, không có bước chọn Mode riêng. Có **6 tổ hợp** chơi.
 
-## Mô phỏng và kiểm thử
+Dùng **2/8** để chọn lên/xuống trong menu, **5** xác nhận. Trong game: **2/4/6/8** đổi hướng, **9** chơi lại. Phím **1** quay lại bước chọn trước trong menu Map hoặc về menu Level sau khi thắng/thua.
 
-Trong Proteus, mở schematic của board, gán HEX mới vào **Program File** của ATmega128 và xác nhận **Clock Frequency**. Kiểm tra menu, phím điều khiển, ba Level, ba Map, bốn Mode, điểm trên LED, trạng thái trên LCD và hình vẽ trên Nokia. Thử riêng Wrap Around, Reverse Snake, Bonus, TIME_UP, vật cản động, Pause/Restart và kỷ lục sau khi reset MCU.
+## Chọn kiểu LED 7 đoạn CA/CC
 
-Trên Ubuntu, chạy kiểm thử logic bằng:
+- **BT1 — PB2, chân 12:** chọn Common-Anode (CA).
+- **BT2 — PB3, chân 13:** chọn Common-Cathode (CC).
+- Hai nút nhấn xuống GND, dùng pull-up nội; chống dội 20 ms, cần nhả trước lần nhấn tiếp theo.
+- CA đảo mẫu segment bằng NOT, digit chọn mức cao. CC giữ mẫu segment, digit chọn mức thấp.
+- Lựa chọn được lưu tại EEPROM `0x03F0`, khôi phục khi khởi động. Dữ liệu chưa hợp lệ thì dùng CA; không ghi lặp khi giữ nút hoặc chọn lại mode đã lưu.
+- Có thể đổi mode ở menu, khi chơi hoặc ở màn kết quả. Nếu nhấn cả hai nút thì bỏ qua đến khi nhả hết.
 
-```sh
-sh tests/run_host_validation.sh
-```
+Hai cụm CA/CC trong mạch hiện dùng chung các net `7SLED`; lựa chọn này đổi cực tính bus. Để điều khiển bật/tắt từng cụm độc lập cần có đường enable hoặc mạch cách ly riêng.
 
-Test host dùng mock để kiểm tra thuật toán; nó không tạo HEX và không thay thế Build All hoặc Proteus. [Báo cáo kiểm định mở rộng](docs/final_extended_validation_report.md) ghi ma trận 36 tổ hợp, kết quả đã kiểm tra và các mục còn cần xác minh trên CVAVR, Proteus và board thực.
+## Các file cần thêm vào CodeVisionAVR
 
-Trước khi nạp board, kiểm tra nguồn, clock, mức điện áp Nokia, kết nối ISP và fuse. Sao lưu EEPROM; kiểm tra file `.eep`, chip erase và EESAVE để không ghi đè kỷ lục cũ.
+Chọn một trong hai cách:
+
+### Cách 1: Dùng 7 file gốc
+
+Thêm 7 file sau vào project, giữ nguyên các thư mục và file `.h` đi kèm:
+
+1. `main.c`
+2. `game/game.c`
+3. `drivers/display.c`
+4. `drivers/keypad.c`
+5. `drivers/timer.c`
+6. `drivers/led7seg.c`
+7. `drivers/lcd1602.c`
+
+### Cách 2: Dùng bản gộp 2 file
+
+Bản gộp được sinh từ đúng 7 file của Cách 1, có cùng logic và tính năng hiện tại. Lấy 2 file trong thư mục `export/codevision/`:
+
+- `snake_firmware.c`
+- `board_config.h`
+
+
+## Tài liệu giải thích tính năng
+
+Xem [danh mục 11 tài liệu tính năng](tinh_nang/TINH_NANG.md#9-tài-liệu-giải-thích-chi-tiết-từng-tính-năng). Mỗi file có ví dụ minh họa và giải thích chi tiết cách chương trình thực hiện; gồm menu, map, keypad, xuyên biên, ăn mồi, đảo đầu–đuôi, vật cản, WIN/GAME OVER, hiển thị và chọn CA/CC.
