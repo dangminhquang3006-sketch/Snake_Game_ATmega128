@@ -1,6 +1,6 @@
 # Các tính năng của Snake Game ATmega128
 
-Tài liệu mô tả bản **8 file mã nguồn gốc** hiện tại. Bản rút gọn trong `export/codevision/` chưa cập nhật các thay đổi này.
+Tài liệu mô tả bản **8 file mã nguồn gốc** và bản **gộp 2 file** trong `export/codevision/`. Bản gộp được sinh từ các source gốc bằng `export/generate_codevision.py`, dùng cùng logic và cấu hình tính năng; các giải thích bên dưới áp dụng cho cả hai cách đóng gói.
 
 ## 1. Hai chế độ chơi
 

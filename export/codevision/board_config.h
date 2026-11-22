@@ -77,11 +77,10 @@
 #define GAME_MAX_SCORE ((GRID_COLS*GRID_ROWS-3u)*10u)
 /* Timing configuration. All *_MS values are in milliseconds. */
 /* Toc do ran: thoi gian di chuyen mot o, theo Level. */
-#define GAME_EASY_MOVE_MS 500u
 #define GAME_NORMAL_MOVE_MS 300u
 #define GAME_HARD_MOVE_MS 250u
 
-/* Survival: running time between obstacle spawn attempts; pause stops it. */
+/* Both levels: running time between obstacle attempts; pause stops it. */
 #define DYNAMIC_OBSTACLE_INTERVAL_MS 10000UL
 
 /* Peripheral service and diagnostic screen periods. */

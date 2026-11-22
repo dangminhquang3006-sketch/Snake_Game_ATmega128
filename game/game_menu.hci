@@ -1,8 +1,1 @@
 VERSION:3 SOURCE_TIMESTAMP:5D769717
-NODE:M LEVEL:0 LINE:2 "GAME_MENU_H"
-NODE:I LEVEL:0 LINE:4 "D:\nhung\Snake_Game_ATmega128\game\..\drivers\keypad.h"
-NODE:I LEVEL:0 LINE:5 "D:\nhung\Snake_Game_ATmega128\game\game_map.h"
-NODE:I LEVEL:0 LINE:6 "D:\nhung\Snake_Game_ATmega128\game\game_mode.h"
-NODE:T LEVEL:0 LINE:8 "GameLevel"
-LEVEL:1 LINE:10 ICON:E "GAME_LEVEL_NORMAL=1"
-LEVEL:1 LINE:12 ICON:E "GAME_LEVEL_HARD=2"
