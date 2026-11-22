@@ -10,9 +10,6 @@ extern unsigned char hs_slot_a[13],hs_slot_b[13];
 extern unsigned char hs_v2_a[25],hs_v2_b[25];
 extern unsigned char hs_v3_a[61],hs_v3_b[61];
 extern unsigned char hs_v4_a[79],hs_v4_b[79];
-void display_clear(void) {}
-void display_text(unsigned char x,unsigned char y,char *value)
-{ (void)x; (void)y; (void)value; }
 
 static unsigned char crc(unsigned char *data,unsigned char count)
 {

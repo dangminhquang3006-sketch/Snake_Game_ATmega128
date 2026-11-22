@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
-#include "../game/snake_game.c"
-#include "../game/dynamic_obstacle.c"
+#include "../game/game.c"
 
 /* Exercise placement against every fixed layout and wrapping rule. */
 static void check_bars_all_maps(void)

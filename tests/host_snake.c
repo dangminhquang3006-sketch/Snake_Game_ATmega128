@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
+#include "../game/game.c"
 /* Include implementation to exercise the hard-to-reach tail and win states. */
-#include "../game/snake_game.c"
 
 static void check_fruit_rules(void)
 {
