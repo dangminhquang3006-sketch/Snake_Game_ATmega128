@@ -11,9 +11,9 @@ ROW2           4      5      6
 ROW3           7      8      9
 ```
 
-Trong game, 2/8/4/6 lần lượt điều khiển lên/xuống/trái/phải; 5 tạm dừng hoặc tiếp tục; 9 chơi lại. Trong menu, 2/8 di chuyển lựa chọn và 5 xác nhận. Phím 1 dùng quay lại menu theo trạng thái ứng dụng.
+Trong game, 2/8/4/6 lần lượt điều khiển lên/xuống/trái/phải; 5 không có hành động trong ván; 9 chơi lại. Trong menu, 2/8 di chuyển lựa chọn và 5 xác nhận. Phím 1 dùng quay lại menu theo trạng thái ứng dụng.
 
-Giả sử người chơi giữ phím 5. Chương trình chỉ phát **một sự kiện nhấn** sau khi phím ổn định đủ 20 ms; nó không liên tục Pause/Resume trong lúc giữ.
+Giả sử người chơi giữ phím 5. Chương trình chỉ phát **một sự kiện nhấn** sau khi phím ổn định đủ 20 ms; nó không xác nhận lặp nhiều lần trong lúc giữ.
 
 | Thời điểm minh họa | Mức đọc | Xử lý |
 |---|---|---|
@@ -28,19 +28,19 @@ Các thời điểm là ví dụ theo đồng hồ MCU, giả sử vòng lặp �
 
 ## 2. Cách chương trình thực hiện
 
-Quét phần cứng và chống dội nằm trong [drivers/keypad.c](../../drivers/keypad.c); tên sự kiện ở [drivers/keypad.h](../../drivers/keypad.h). [main.c](../../main.c) lấy sự kiện, còn [game/game.c](../../game/game.c) quyết định có nhận hướng rẽ hay không.
+Quét phần cứng và chống dội nằm trong [drivers/keypad.c](../drivers/keypad.c); tên sự kiện ở [drivers/keypad.h](../drivers/keypad.h). [main.c](../main.c) lấy sự kiện, còn [game/game.c](../game/game.c) quyết định có nhận hướng rẽ hay không.
 
 ### 2.1. Phân biệt vị trí phím và sự kiện chức năng
 
 Vị trí thô là số 1–9. `KEY_RELEASED=0` nghĩa là không có phím, còn `KEY_MULTIPLE=10` nghĩa là lượt quét phát hiện nhiều vị trí đang nhấn.
 
-`KeyEvent` là kiểu dữ liệu khác, gồm các tên chức năng UP/DOWN/LEFT/RIGHT/PAUSE/RESTART/MENU. Ví dụ vị trí 8 tạo sự kiện DOWN; không được lấy số thứ tự enum để suy ra số in trên keypad.
+`KeyEvent` là kiểu dữ liệu khác, gồm các tên chức năng UP/DOWN/LEFT/RIGHT/CONFIRM/RESTART/MENU. Ví dụ vị trí 8 tạo sự kiện DOWN; không được lấy số thứ tự enum để suy ra số in trên keypad.
 
 Hai vị trí 3 và 7 không gán chức năng trong game hiện tại. Chúng vẫn là các vị trí có thể đọc ở chế độ kiểm tra keypad, nhưng không tạo lệnh điều khiển thông thường.
 
 ### 2.2. Các chân hàng và cột
 
-Theo [config/board_config.h](../../config/board_config.h):
+Theo [config/board_config.h](../config/board_config.h):
 
 | Đường keypad | Chân ATmega128 | Cấu hình |
 |---|---|---|
@@ -203,7 +203,7 @@ static KeyEvent event_from_position(unsigned char key)
     case 8: return KEY_DOWN;
     case 4: return KEY_LEFT;
     case 6: return KEY_RIGHT;
-    case 5: return KEY_PAUSE;
+    case 5: return KEY_CONFIRM;
     case 9: return KEY_RESTART;
     default: return KEY_NONE;
     }
@@ -222,13 +222,13 @@ KeyEvent keypad_get_event(void)
 
 `keypad_get_event()` sao chép `pending` vào biến trả về rồi xóa ô chờ. Lần gọi kế tiếp không nhận lại cùng sự kiện.
 
-`main.c` gọi `keypad_update(now_ms)` rồi `keypad_get_event()` trong vòng lặp. Menu và game nhận cùng kiểu sự kiện, nhưng diễn giải theo ngữ cảnh: phím 5 xác nhận trong menu, Pause/Resume trong ván.
+`main.c` gọi `keypad_update(now_ms)` rồi `keypad_get_event()` trong vòng lặp. Menu và game nhận cùng kiểu sự kiện, nhưng diễn giải theo ngữ cảnh: phím 5 xác nhận trong menu và được bỏ qua trong ván.
 
 Vì chỉ có một ô chờ, nếu ứng dụng không lấy sự kiện mà một lần nhấn mới hợp lệ đến sau đó, sự kiện mới có thể thay nội dung chờ. Luồng chính hiện đọc sự kiện mỗi lượt phục vụ nên thiết kế không dùng một hàng đợi dài.
 
 ### 2.9. Nhận hướng rẽ và chặn quay ngược
 
-Trong `snake_handle_key()`, sau các nhánh Restart và Pause:
+Trong `snake_handle_key()`, sau nhánh Restart:
 
 ```c
 if (state!=SNAKE_RUNNING || turn_queued) return;

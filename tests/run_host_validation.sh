@@ -17,12 +17,6 @@ host_cc=${CC:-cc}
     -o "$output_dir/host_dynamic"
 "$output_dir/host_dynamic"
 
-"$host_cc" -DHOST_TEST -std=c89 -Wall -Wextra -Werror -I"$repo_dir/tests/mock" \
-    "$repo_dir/game/game.c" "$repo_dir/tests/mock_display.c" \
-    "$repo_dir/storage/highscore_eeprom.c" \
-    "$repo_dir/tests/host_eeprom.c" -o "$output_dir/host_eeprom"
-"$output_dir/host_eeprom"
-
 "$host_cc" -std=c89 -Wall -Wextra -Werror -I"$repo_dir/tests/mock" \
     "$repo_dir/drivers/lcd1602.c" \
     "$repo_dir/tests/host_lcd.c" -o "$output_dir/host_lcd"

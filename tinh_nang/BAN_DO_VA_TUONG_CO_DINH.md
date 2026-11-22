@@ -30,7 +30,7 @@ Map được người chơi chọn trước ván và giữ nguyên đến khi ch
 
 ## 2. Cách chương trình thực hiện
 
-Dữ liệu và kiểm tra map nằm trong [game/game.c](../../game/game.c); các ID và API nằm trong [game/game_map.h](../../game/game_map.h).
+Dữ liệu và kiểm tra map nằm trong [game/game.c](../game/game.c); các ID và API nằm trong [game/game_map.h](../game/game_map.h).
 
 ### 2.1. Gán ID và lưu 8 hàng của từng map
 
@@ -203,7 +203,7 @@ Cùng một API được dùng khi:
 - Sinh mồi: không đặt vào tường.
 - Sinh thanh chắn: không đặt đè lên tường; BFS tính cả tường trong bản đồ giả lập.
 - Vẽ bản đồ: ô có tường được vẽ khung.
-- Tính sức chứa: đếm các ô không có tường cho điều kiện WIN và giới hạn điểm lưu trữ.
+- Tính sức chứa: đếm các ô không có tường cho điều kiện WIN.
 
 Nhờ dùng chung hàm, hình vẽ và luật va chạm đều dựa trên cùng dữ liệu bit của map.
 

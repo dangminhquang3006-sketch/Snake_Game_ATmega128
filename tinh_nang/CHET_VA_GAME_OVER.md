@@ -59,16 +59,15 @@ Rắn không có số mạng hay thanh máu. Một lần va chạm bị xác đ�
 
 ## 2. Cách chương trình thực hiện
 
-Logic phát hiện chết nằm trong [game/game.c](../../game/game.c). [main.c](../../main.c) điều phối việc dừng gameplay, xử lý kết quả, cập nhật màn hình và nhận phím sau khi kết thúc. Các khối C dưới đây được trích từ source hiện tại.
+Logic phát hiện chết nằm trong [game/game.c](../game/game.c). [main.c](../main.c) điều phối việc dừng gameplay, xử lý kết quả, cập nhật màn hình và nhận phím sau khi kết thúc. Các khối C dưới đây được trích từ source hiện tại.
 
-### 2.1. Biểu diễn trạng thái sống, tạm dừng, chết và thắng
+### 2.1. Biểu diễn trạng thái chạy, chết và thắng
 
-Trong [game/snake_game.h](../../game/snake_game.h), trạng thái rắn được khai báo:
+Trong [game/snake_game.h](../game/snake_game.h), trạng thái rắn được khai báo:
 
 ```c
 typedef enum {
     SNAKE_RUNNING=0,
-    SNAKE_PAUSED,
     SNAKE_GAME_OVER,
     SNAKE_WIN
 } SnakeState;
@@ -77,9 +76,8 @@ typedef enum {
 | Trạng thái | Giá trị enum | Ý nghĩa |
 |---|---:|---|
 | `SNAKE_RUNNING` | 0 | Ván đang chạy, được di chuyển và sinh vật cản |
-| `SNAKE_PAUSED` | 1 | Tạm dừng, có thể tiếp tục bằng phím 5 |
-| `SNAKE_GAME_OVER` | 2 | Đã chết, ván kết thúc |
-| `SNAKE_WIN` | 3 | Đã thắng, ván kết thúc |
+| `SNAKE_GAME_OVER` | 1 | Đã chết, ván kết thúc |
+| `SNAKE_WIN` | 2 | Đã thắng, ván kết thúc |
 
 Biến `state` lưu trạng thái hiện tại, còn `snake_state()` cho các phần khác đọc nó:
 
@@ -96,7 +94,7 @@ Cần phân biệt hai biến trạng thái trong chương trình:
 | Biến | Phạm vi điều khiển |
 |---|---|
 | `app_state` trong `main.c` | Đang ở menu Level, menu Map hay màn chơi |
-| `state` trong `game.c` | Rắn đang chạy, Pause, chết hay thắng |
+| `state` trong `game.c` | Rắn đang chạy, chết hay thắng |
 
 Khi chết, `app_state` vẫn ở `APP_STATE_GAME` để hiển thị kết quả và nhận lựa chọn sau ván; `state` đổi sang `SNAKE_GAME_OVER`. Chương trình chỉ về menu khi người chơi nhấn phím 1.
 
@@ -441,9 +439,8 @@ Hàm `lcd_for_state()` trong `main.c`:
 ```c
 static void lcd_for_state(SnakeState state, GameLevel level, MapId map)
 {
-    if (state==SNAKE_RUNNING || state==SNAKE_PAUSED)
-        lcd1602_show_obstacles(level,map,dynamic_obstacle_get_count(),
-                              (unsigned char)(state==SNAKE_PAUSED));
+    if (state==SNAKE_RUNNING)
+        lcd1602_show_obstacles(level,map,dynamic_obstacle_get_count());
     else lcd1602_show_result((unsigned char)(state==SNAKE_WIN),
                              snake_get_score());
 }
@@ -474,64 +471,37 @@ Thư viện LCD của dự án chuẩn bị nội dung trong bộ đệm rồi c
 
 LED 7 đoạn vẫn hiển thị điểm hiện tại. Va chạm thông thường không đặt `score` về 0, nên điểm cuối ván được giữ cho tới khi chơi lại hoặc về menu. Việc quét LED vẫn tiếp tục dù rắn đã dừng.
 
-### 2.15. Xử lý kỷ lục một lần khi ván kết thúc
 
-Trong `main.c`:
+
+### 2.15. Sau khi chết, phím điều hướng và phím 5 được xử lý thế nào?
+
+Trong `snake_handle_key()`, Restart được kiểm tra trước điều kiện chỉ nhận hướng khi RUNNING:
 
 ```c
-if (app_state==APP_STATE_GAME && !result_saved &&
-    (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN)) {
-    led7seg_blank();
-    highscore_record_result(current_level,current_map,MODE_SURVIVAL,
-                            snake_get_score());
-    led7seg_resume();
-    result_saved=1;
+void snake_handle_key(KeyEvent key)
+{
+    SnakeDirection requested;
+    if (key==KEY_RESTART) {
+        snake_init();
+        return;
+    }
+    if (state!=SNAKE_RUNNING || turn_queued) return;
+    if (key==KEY_UP) requested=DIR_UP;
+    else if (key==KEY_DOWN) requested=DIR_DOWN;
+    else if (key==KEY_LEFT) requested=DIR_LEFT;
+    else if (key==KEY_RIGHT) requested=DIR_RIGHT;
+    else return;
+    if (requested==direction || ((requested+2)&3)==direction) return;
+    next_direction=requested;
+    turn_queued=1;
 }
 ```
 
-Điều kiện gồm ba phần:
+Với GAME OVER, các phím hướng bị bỏ qua vì `state!=SNAKE_RUNNING`. Phím 9 vẫn gọi `snake_init()` do nhánh Restart nằm trước điều kiện này. Phím 1 được `main.c` xử lý riêng để về menu.
 
-1. Vẫn ở màn chơi `APP_STATE_GAME`.
-2. `result_saved` chưa được đặt.
-3. Trạng thái là GAME OVER hoặc WIN.
+Phím 5 chỉ dùng xác nhận ở menu. Nó không đổi trạng thái rắn trong ván hoặc màn kết quả. Khi rắn còn RUNNING, yêu cầu quay ngược trực tiếp bị bỏ qua; chết do thân chỉ xảy ra khi ô đầu dự kiến thật sự va vào một đốt phải kiểm tra.
 
-Chương trình gọi `highscore_record_result()` với Level, Map, nhóm kỷ lục đang dùng và điểm cuối ván. Nhóm `MODE_SURVIVAL` ở đây là nhóm lưu trữ kế thừa cho luật có vật cản, không phải một màn chọn chế độ riêng.
-
-Bộ lưu trữ trong [storage/highscore_eeprom.c](../../storage/highscore_eeprom.c) chỉ ghi EEPROM khi điểm hợp lệ và cao hơn kỷ lục hiện có. Nó có thể trả về:
-
-| Kết quả | Ý nghĩa |
-|---|---|
-| `HIGHSCORE_UNCHANGED` | Điểm không vượt kỷ lục, không cần ghi mới |
-| `HIGHSCORE_SAVED` | Đã ghi và kiểm tra bản ghi mới |
-| `HIGHSCORE_SAVE_FAILED` | Dữ liệu không hợp lệ hoặc quá trình lưu/kiểm tra thất bại |
-
-`result_saved=1` khiến vòng lặp sau không gọi lưu lại liên tục trong lúc màn GAME OVER còn hiện. Trong `main.c` hiện tại, giá trị trả về của hàm lưu không được kiểm tra; cờ này mang nghĩa đã xử lý lượt kết quả, không tự chứng minh rằng EEPROM luôn lưu thành công, và không tạo cơ chế thử lại khi lỗi.
-
-`led7seg_blank()` tắt các digit trong lúc gọi xử lý lưu, rồi `led7seg_resume()` khôi phục quét hiển thị sau đó.
-
-### 2.16. Sau khi chết, phím điều hướng và phím 5 được xử lý thế nào?
-
-Trong `snake_handle_key()`, nhánh Restart được kiểm tra trước. Tiếp theo là Pause/Resume, rồi mới đến nhận hướng:
-
-```c
-if (key==KEY_PAUSE) {
-    if (state==SNAKE_RUNNING) state=SNAKE_PAUSED;
-    else if (state==SNAKE_PAUSED) state=SNAKE_RUNNING;
-    return;
-}
-if (state!=SNAKE_RUNNING || turn_queued) return;
-```
-
-Với `state=SNAKE_GAME_OVER`:
-
-- Phím 5 không đổi sang RUNNING vì nhánh Pause chỉ chuyển RUNNING ↔ PAUSED.
-- Các phím 2/4/6/8 không được nhận làm hướng mới vì điều kiện `state!=SNAKE_RUNNING` trả về ngay.
-- Phím 9 vẫn được nhận vì nhánh Restart nằm trước kiểm tra trạng thái.
-- Phím 1 được `main.c` xử lý riêng để về menu.
-
-Bấm hướng ngược trực tiếp cũng không phải một sự kiện chết riêng. Khi rắn còn RUNNING, bộ điều khiển bỏ qua yêu cầu quay ngược; chết do thân chỉ xảy ra khi ô đầu dự kiến thật sự va vào phần thân phải kiểm tra.
-
-### 2.17. Phím 9 tạo lại ván trên Level và Map hiện tại
+### 2.16. Phím 9 tạo lại ván trên Level và Map hiện tại
 
 Nhánh Restart:
 
@@ -578,11 +548,10 @@ Kết quả sau khi nhấn 9:
 
 `snake_init()` không gọi hàm đổi Level hay đổi Map, nên người chơi không cần chọn lại. Việc reset vật cản sinh thêm cũng không xóa tường cố định của bản đồ.
 
-Bên `main.c`, nhánh Restart còn đặt `result_saved=0`, `last_service_ms=now_ms`, `running_elapsed_ms=0`, và cập nhật `last_move_ms=now_ms`. Điều này cho phép lưu kết quả ván mới khi kết thúc, tránh tính thời gian của ván cũ vào bộ sinh vật cản và chờ đủ chu kỳ trước bước di chuyển tiếp theo.
+Bên `main.c`, nhánh Restart đặt `last_service_ms=now_ms`, `running_elapsed_ms=0` và `last_move_ms=now_ms` để tránh tính thời gian của ván cũ vào bộ sinh vật cản và chờ đủ chu kỳ trước bước di chuyển tiếp theo.
 
-Kỷ lục đã lưu không bị xóa chỉ vì chơi lại. Điểm về 0 là điểm của ván mới, không phải thao tác xóa EEPROM.
 
-### 2.18. Phím 1 quay về menu Level
+### 2.17. Phím 1 quay về menu Level
 
 Trong `main.c`:
 
@@ -604,7 +573,7 @@ if (key==KEY_MENU &&
 
 Lúc vừa về menu, biến trạng thái rắn có thể vẫn là GAME OVER và dữ liệu ván cũ vẫn còn trong bộ nhớ. Chúng không được dùng để tiếp tục chơi vì ứng dụng đang xử lý menu. Khi người chơi chọn Level rồi xác nhận Map, chương trình gọi `snake_init()` để bắt đầu ván mới.
 
-### 2.19. Theo dõi trọn một lần đâm vào thân
+### 2.18. Theo dõi trọn một lần đâm vào thân
 
 Với ví dụ đầu tài liệu, giả sử điểm là 80, mồi nằm ở nơi khác và không có vật cản tại `(6,3)`:
 
@@ -620,8 +589,7 @@ Với ví dụ đầu tài liệu, giả sử điểm là 80, mồi nằm ở n�
 | 8 | Gán trạng thái và trả về | GAME OVER, trả về 1 |
 | 9 | `main.c` nhận kết quả | `redraw=1`, `update_lcd=1` |
 | 10 | Kiểm tra cập nhật vật cản | Bỏ qua vì không còn RUNNING |
-| 11 | Xử lý kỷ lục | Gọi một lần, đặt `result_saved=1` |
-| 12 | Cập nhật hiển thị | Nokia và LCD hiện GAME OVER, điểm 80 |
-| 13 | Những vòng lặp tiếp theo | Không di chuyển, vẫn quét phím và LED |
+| 11 | Cập nhật hiển thị | Nokia và LCD hiện GAME OVER, điểm 80 |
+| 12 | Những vòng lặp tiếp theo | Không di chuyển, vẫn quét phím và LED |
 
 Mảng tọa độ, chiều dài 8 và điểm 80 vẫn được giữ ở nhánh va chạm này. Người chơi lựa chọn nhấn 9 để khởi tạo lại hoặc nhấn 1 về menu; chương trình không tự bắt đầu lại ván ngay sau khi chết.

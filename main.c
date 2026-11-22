@@ -9,9 +9,7 @@
 #include "game/game_render.h"
 #include "game/game_menu.h"
 #include "game/game_map.h"
-#include "game/game_mode.h"
 #include "game/dynamic_obstacle.h"
-#include "storage/highscore_eeprom.h"
 
 #if KEYPAD_TEST_MODE
 static flash char keypad_title[]="KEYPAD TEST";
@@ -50,9 +48,8 @@ static flash char invalid_map_text[]="INVALID MAP";
 
 static void lcd_for_state(SnakeState state, GameLevel level, MapId map)
 {
-    if (state==SNAKE_RUNNING || state==SNAKE_PAUSED)
-        lcd1602_show_obstacles(level,map,dynamic_obstacle_get_count(),
-                              (unsigned char)(state==SNAKE_PAUSED));
+    if (state==SNAKE_RUNNING)
+        lcd1602_show_obstacles(level,map,dynamic_obstacle_get_count());
     else lcd1602_show_result((unsigned char)(state==SNAKE_WIN),
                              snake_get_score());
 }
@@ -77,10 +74,8 @@ void main(void)
     GameLevel previous_selection;
     MapId current_map;
     MapId previous_map;
-    unsigned char result_saved;
     AppState app_state;
     KeyEvent key;
-    SnakeState before;
     unsigned char redraw;
     unsigned char update_lcd;
 #endif
@@ -108,7 +103,6 @@ void main(void)
     lcd1602_init();
     led7seg_init();
     keypad_init();
-    highscore_init();
     game_menu_init(GAME_LEVEL_NORMAL);
     current_level=GAME_LEVEL_NORMAL;
     current_map=MAP_CLASSIC;
@@ -117,8 +111,7 @@ void main(void)
     app_state=APP_STATE_LEVEL_SELECT;
     shown_score=0;
     led7seg_set_number(0);
-    lcd1602_show_menu(current_level,
-                     highscore_get(current_level,MAP_CLASSIC,MODE_SURVIVAL));
+    lcd1602_show_menu(current_level);
 #endif
 
     timer_init();
@@ -157,7 +150,7 @@ void main(void)
             test_phase=(unsigned char)((test_phase+1u)&3u);
             if (test_phase==0) lcd1602_show_test_ready();
             else if (test_phase==1) lcd1602_show_playing(GAME_LEVEL_NORMAL,MAP_CLASSIC);
-            else if (test_phase==2) lcd1602_show_paused(GAME_LEVEL_NORMAL,MAP_CLASSIC);
+            else if (test_phase==2) lcd1602_show_result(1,100);
             else lcd1602_show_result(0,50);
         }
     }
@@ -182,7 +175,6 @@ void main(void)
 #else
     last_move_ms=timer_get_ms();
     last_service_ms=last_move_ms;
-    result_saved=0;
     led7seg_blank();
     game_menu_render();
     led7seg_resume();
@@ -227,7 +219,6 @@ void main(void)
                         app_state=APP_STATE_GAME;
                         last_move_ms=now_ms;
                         last_service_ms=now_ms;
-                        result_saved=0;
                         shown_score=0;
                         led7seg_set_number(0);
                         redraw=1;
@@ -253,19 +244,14 @@ void main(void)
                 redraw=1;
                 update_lcd=1;
             } else if (key!=KEY_NONE) {
-                before=snake_state();
                 snake_mix_entropy(now_ms);
                 snake_handle_key(key);
                 if (key==KEY_RESTART) {
-                    result_saved=0;
                     last_service_ms=now_ms;
                     running_elapsed_ms=0;
-                }
-                if (key==KEY_RESTART || before!=snake_state()) {
+                    last_move_ms=now_ms;
                     redraw=1;
                     update_lcd=1;
-                    if (key==KEY_RESTART || snake_state()==SNAKE_RUNNING)
-                        last_move_ms=now_ms;
                 }
             }
             if (app_state==APP_STATE_GAME && snake_state()==SNAKE_RUNNING &&
@@ -281,14 +267,6 @@ void main(void)
                 redraw=1;
                 update_lcd=1;
             }
-            if (app_state==APP_STATE_GAME && !result_saved &&
-                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN)) {
-                led7seg_blank();
-                highscore_record_result(current_level,current_map,MODE_SURVIVAL,
-                                        snake_get_score());
-                led7seg_resume();
-                result_saved=1;
-            }
             if (app_state==APP_STATE_GAME && shown_score!=snake_get_score()) {
                 shown_score=snake_get_score();
                 led7seg_set_number(shown_score);
@@ -303,13 +281,9 @@ void main(void)
         }
         if (update_lcd) {
             if (app_state==APP_STATE_LEVEL_SELECT)
-                lcd1602_show_menu(game_menu_selected(),
-                                  highscore_get(game_menu_selected(),MAP_CLASSIC,
-                                                MODE_SURVIVAL));
+                lcd1602_show_menu(game_menu_selected());
             else if (app_state==APP_STATE_MAP_SELECT)
-                lcd1602_show_map_menu(game_map_menu_selected(),
-                       highscore_get(current_level,game_map_menu_selected(),
-                                     MODE_SURVIVAL));
+                lcd1602_show_map_menu(game_map_menu_selected());
             else lcd_for_state(snake_state(),current_level,current_map);
         }
         if (lcd1602_is_dirty()) {

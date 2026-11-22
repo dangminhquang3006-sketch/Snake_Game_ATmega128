@@ -37,23 +37,23 @@ Nếu mỗi lượt đều tìm được vị trí hợp lệ, số thanh chắn
 
 Tối đa có **8 thanh chắn**. Nếu một lượt không tìm được vị trí hợp lệ, chương trình bỏ qua lượt đó và chờ chu kỳ tiếp theo; số thanh chắn không tăng.
 
-Thời gian tạm dừng không được cộng vào chu kỳ. Ví dụ, đã chơi 7 giây rồi Pause thì sau khi Resume cần chơi tiếp khoảng 3 giây mới đến lượt thử sinh vật cản. Các thanh đã sinh giữ nguyên vị trí đến khi chơi lại.
+Chu kỳ chỉ tính thời gian ván đang RUNNING; thời gian ở menu và sau khi kết thúc không được cộng vào ván mới. Các thanh đã sinh giữ nguyên vị trí đến khi chơi lại.
 
 ## 2. Cách chương trình thực hiện
 
-Phần xử lý nằm trong [game/game.c](../../game/game.c), nhóm hàm `dynamic_obstacle`. Vòng lặp trong [main.c](../../main.c) truyền thời gian và cập nhật màn hình; [drivers/timer.c](../../drivers/timer.c) cung cấp đồng hồ mili giây. Các đoạn C dưới đây trích từ mã nguồn hiện tại.
+Phần xử lý nằm trong [game/game.c](../game/game.c), nhóm hàm `dynamic_obstacle`. Vòng lặp trong [main.c](../main.c) truyền thời gian và cập nhật màn hình; [drivers/timer.c](../drivers/timer.c) cung cấp đồng hồ mili giây. Các đoạn C dưới đây trích từ mã nguồn hiện tại.
 
 ### 2.1. Các thông số và quy ước tọa độ
 
 Lưới chơi có 14 cột × 8 hàng, tức 112 ô. Cột `x` chạy từ 0 đến 13; hàng `y` chạy từ 0 đến 7. `y` tăng từ trên xuống dưới.
 
-Chu kỳ trong [config/board_config.h](../../config/board_config.h):
+Chu kỳ trong [config/board_config.h](../config/board_config.h):
 
 ```c
 #define DYNAMIC_OBSTACLE_INTERVAL_MS 10000UL
 ```
 
-Giới hạn trong [game/game_mode.h](../../game/game_mode.h):
+Giới hạn trong [game/game_mode.h](../game/game_mode.h):
 
 ```c
 #define DYNAMIC_OBSTACLE_MAX_COUNT 8u
@@ -118,7 +118,7 @@ interrupt [TIM1_COMPA] void timer1_compa_isr(void)
 
 Việc tìm vị trí, kiểm tra BFS và vẽ màn hình đều thực hiện trong vòng lặp chính. Chúng không chạy trong ngắt Timer1.
 
-### 2.4. Tách thời gian đang chơi khỏi thời gian tạm dừng
+### 2.4. Chỉ tích lũy thời gian khi đang chơi
 
 Đầu mỗi vòng lặp chính:
 
@@ -135,9 +135,9 @@ Giải thích từng bước:
 1. `now_ms` đã được lấy từ `timer_get_ms()`.
 2. Đặt `running_elapsed_ms=0` để mặc định lượt này không có thời gian được tính cho gameplay.
 3. Chỉ khi đang ở màn chơi và trạng thái là `SNAKE_RUNNING`, tính số ms từ lần phục vụ trước: `now_ms-last_service_ms`.
-4. Luôn đưa `last_service_ms` về `now_ms`, kể cả khi đang Pause hoặc ở menu. Nhờ đó, khi Resume chương trình không cộng cả quãng tạm dừng vào chu kỳ.
+4. Luôn đưa `last_service_ms` về `now_ms`, kể cả khi đang ở menu hoặc màn kết quả. Khi tạo ván mới, mốc phục vụ và tích lũy vật cản được đặt lại.
 
-Ví dụ đã tích lũy 7.000 ms rồi Pause: `elapsed_ms` giữ phần tích lũy đó. Dù đồng hồ MCU vẫn tăng trong lúc Pause, thời gian chờ không được cộng vào bộ sinh vật cản. Sau Resume, cần thêm khoảng 3.000 ms RUNNING để đến lượt tiếp theo. Mốc chuyển trạng thái được phục vụ theo vòng lặp nên có độ phân giải thực tế phụ thuộc thời gian xử lý vòng lặp.
+Ví dụ đã tích lũy 7.000 ms trong ván thì cần thêm khoảng 3.000 ms RUNNING để đến lượt thử tiếp theo. Thời điểm phục vụ phụ thuộc vòng lặp chính, không phải lịch cứng theo đồng hồ ngoài đời.
 
 Trong `main.c`, trình tự ở màn chơi là: xử lý phím → di chuyển rắn nếu đủ chu kỳ → thử cập nhật vật cản nếu rắn vẫn RUNNING. Vì vậy, nếu vừa thua hoặc thắng ở bước di chuyển thì không sinh thêm vật cản ở phần sau của lượt đó.
 
@@ -544,7 +544,7 @@ for (i=0;i<dynamic_obstacle_get_count();++i) {
 
 Mỗi ô có kích thước `CELL_SIZE=6` pixel. Thanh 3 ô vì vậy có kích thước `18×6` pixel. Tọa độ lưới `(8,5)` được đổi thành góc ảnh `(48,30)` pixel.
 
-LCD 16×2 lấy `dynamic_obstacle_get_count()` để hiện số thanh trong chuỗi `OBST:xx`, cùng trạng thái PLAYING hoặc PAUSED. Số hiển thị là số thanh, không phải số ô.
+LCD 16×2 lấy `dynamic_obstacle_get_count()` để hiện số thanh trong chuỗi `OBST:xx`, cùng trạng thái PLAYING. Số hiển thị là số thanh, không phải số ô.
 
 ### 2.13. Kiểm tra va chạm và cập nhật điều kiện thắng
 
@@ -582,9 +582,7 @@ Tuy nhiên, `elapsed_ms` đã được đặt lại về 0 trước khi tìm ki�
 
 Các nguyên nhân bị loại có thể gồm: vượt cạnh, trùng rắn/mồi/tường/thanh cũ, quá gần đầu, trùng ô đầu dự kiến hoặc làm vùng chơi mất liên thông.
 
-### 2.15. Pause, Restart và quan hệ với đảo đầu–đuôi
-
-Khi Pause, phần thời gian tích lũy được giữ lại và chương trình không gọi cập nhật vật cản trong trạng thái PAUSED. Bản đồ và các thanh đã sinh vẫn giữ nguyên.
+### 2.15. Restart và quan hệ với đảo đầu–đuôi
 
 Khi bắt đầu ván hoặc nhấn phím 9, `snake_init()` gọi:
 

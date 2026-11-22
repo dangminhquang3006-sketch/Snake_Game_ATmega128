@@ -3,10 +3,8 @@
 
 #include "../drivers/keypad.h"
 #include "game_map.h"
-#include "game_mode.h"
 
 typedef enum {
-    /* Preserve stored level IDs for existing EEPROM high scores. */
     GAME_LEVEL_NORMAL=1,
     GAME_LEVEL_HARD
 } GameLevel;

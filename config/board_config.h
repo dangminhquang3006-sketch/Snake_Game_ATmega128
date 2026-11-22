@@ -74,13 +74,12 @@
 #define GRID_COLS 14
 #define GRID_ROWS 8
 #define CELL_SIZE 6
-#define GAME_MAX_SCORE ((GRID_COLS*GRID_ROWS-3u)*10u)
 /* Timing configuration. All *_MS values are in milliseconds. */
 /* Toc do ran: thoi gian di chuyen mot o, theo Level. */
 #define GAME_NORMAL_MOVE_MS 300u
 #define GAME_HARD_MOVE_MS 250u
 
-/* Both levels: running time between obstacle attempts; pause stops it. */
+/* Both levels: running time between obstacle attempts. */
 #define DYNAMIC_OBSTACLE_INTERVAL_MS 10000UL
 
 /* Peripheral service and diagnostic screen periods. */

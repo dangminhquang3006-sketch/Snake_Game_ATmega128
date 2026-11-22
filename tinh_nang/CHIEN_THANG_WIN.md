@@ -20,14 +20,13 @@ Nokia hiện `YOU WIN`, điểm và hướng dẫn `9:RESTART`, `1:MENU`. Nhấn
 
 ## 2. Cách chương trình thực hiện
 
-Phát hiện WIN nằm trong `snake_step()` và `place_food()` của [game/game.c](../../game/game.c). [main.c](../../main.c) tiếp nhận kết quả, dừng cập nhật gameplay và chuẩn bị hiển thị/lưu kỷ lục.
+Phát hiện WIN nằm trong `snake_step()` và `place_food()` của [game/game.c](../game/game.c). [main.c](../main.c) tiếp nhận kết quả, dừng cập nhật gameplay và chuẩn bị hiển thị kết quả.
 
 ### 2.1. Một trạng thái kết thúc riêng
 
 ```c
 typedef enum {
     SNAKE_RUNNING=0,
-    SNAKE_PAUSED,
     SNAKE_GAME_OVER,
     SNAKE_WIN
 } SnakeState;
@@ -174,21 +173,8 @@ LCD đi qua `lcd_for_state()`, truyền `won=1` vào `lcd1602_show_result()`. Nh
 
 WIN không đồng nghĩa điểm luôn được đặt về 9999 hay một con số cố định. Bộ hiển thị đọc điểm đã được tính từ các lần ăn.
 
-### 2.10. Xử lý kỷ lục và phím sau WIN
+### 2.10. Điểm và phím sau WIN
 
-Nhánh xử lý kết quả trong `main.c` dùng chung cho WIN và GAME OVER:
+Điểm cuối ván được giữ trong RAM để hiện trên Nokia, LCD và LED 7 đoạn. Khi Restart, `snake_init()` đặt điểm về 0. Khi về menu bằng phím 1, LED hiển thị 0; lần xác nhận Map tiếp theo tạo lại dữ liệu ván.
 
-```c
-if (app_state==APP_STATE_GAME && !result_saved &&
-    (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN)) {
-    led7seg_blank();
-    highscore_record_result(current_level,current_map,MODE_SURVIVAL,
-                            snake_get_score());
-    led7seg_resume();
-    result_saved=1;
-}
-```
-
-`result_saved` ngăn xử lý kết quả lặp liên tục trong màn cuối. Hàm EEPROM chỉ ghi khi có kỷ lục mới và dữ liệu hợp lệ. Giá trị trả về hiện không được `main.c` dùng để thử lại khi lưu lỗi; chi tiết ở [LUU_KY_LUC_EEPROM.md](LUU_KY_LUC_EEPROM.md).
-
-Phím 5 không đổi WIN thành RUNNING vì Pause/Resume chỉ xử lý hai trạng thái RUNNING và PAUSED. Phím 9 tạo lại ván trên cùng Level/Map; phím 1 về menu Level. Không có bước tự tăng Level hay chuyển map sau khi thắng trong chương trình hiện tại.
+Phím 5 được bỏ qua trong màn chơi và màn kết quả. Phím 9 tạo lại ván trên cùng Level/Map; phím 1 về menu Level. Không có bước tự tăng Level hay chuyển map sau khi thắng trong chương trình hiện tại.

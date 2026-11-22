@@ -62,7 +62,7 @@ static KeyEvent event_from_position(unsigned char key)
     case 8: return KEY_DOWN;
     case 4: return KEY_LEFT;
     case 6: return KEY_RIGHT;
-    case 5: return KEY_PAUSE;
+    case 5: return KEY_CONFIRM;
     case 9: return KEY_RESTART;
     default: return KEY_NONE;
     }

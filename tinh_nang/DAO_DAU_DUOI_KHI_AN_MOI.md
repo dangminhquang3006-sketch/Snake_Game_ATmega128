@@ -27,7 +27,7 @@ Các ô thân rắn không dịch chuyển thêm trong lúc đảo. Chương tr�
 
 ## 2. Cách chương trình thực hiện
 
-Phần dưới bám theo mã nguồn hiện tại trong [game/game.c](../../game/game.c), [main.c](../../main.c) và [game/snake_game.h](../../game/snake_game.h). Các khối C trích từ chương trình; các bảng tọa độ là ví dụ để theo dõi dữ liệu.
+Phần dưới bám theo mã nguồn hiện tại trong [game/game.c](../game/game.c), [main.c](../main.c) và [game/snake_game.h](../game/snake_game.h). Các khối C trích từ chương trình; các bảng tọa độ là ví dụ để theo dõi dữ liệu.
 
 ### 2.1. Chương trình lưu con rắn như thế nào?
 
@@ -66,7 +66,7 @@ static GameLevel current_level=GAME_LEVEL_NORMAL;
 | `direction` | Hướng di chuyển hiện tại |
 | `next_direction` | Hướng rẽ đã được nhận để dùng ở bước di chuyển tiếp theo |
 | `turn_queued` | Bằng 1 khi đã có một lệnh rẽ đang chờ |
-| `state` | RUNNING, PAUSED, GAME OVER hoặc WIN |
+| `state` | RUNNING, GAME OVER hoặc WIN |
 | `current_level` | NORMAL hay HARD, quyết định có đảo sau khi ăn hay không |
 
 `SNAKE_MAX_LENGTH` bằng `GRID_COLS*GRID_ROWS`, tức 112. Chương trình dành sẵn mảng tối đa 112 đốt, không cấp phát bộ nhớ mới sau mỗi lần ăn. Từ khóa `static` giúp các biến giữ giá trị giữa các lần gọi hàm và chỉ được truy cập trực tiếp trong file triển khai này.

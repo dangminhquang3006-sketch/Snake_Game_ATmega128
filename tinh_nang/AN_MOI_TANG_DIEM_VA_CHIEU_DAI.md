@@ -53,11 +53,11 @@ Trong HARD, rắn cũng tăng chiều dài và điểm như trên, sau đó còn
 
 ## 2. Cách chương trình thực hiện
 
-Phần xử lý chính nằm trong [game/game.c](../../game/game.c), nhất là `snake_step()` và `place_food()`. [main.c](../../main.c) quyết định khi nào rắn di chuyển và cập nhật điểm lên LED 7 đoạn. Các khối C dưới đây được trích từ source hiện tại.
+Phần xử lý chính nằm trong [game/game.c](../game/game.c), nhất là `snake_step()` và `place_food()`. [main.c](../main.c) quyết định khi nào rắn di chuyển và cập nhật điểm lên LED 7 đoạn. Các khối C dưới đây được trích từ source hiện tại.
 
 ### 2.1. Lưu tọa độ, chiều dài, mồi và điểm
 
-Một đốt rắn được biểu diễn bằng cấu trúc trong [game/snake_game.h](../../game/snake_game.h):
+Một đốt rắn được biểu diễn bằng cấu trúc trong [game/snake_game.h](../game/snake_game.h):
 
 ```c
 typedef struct {
@@ -166,7 +166,7 @@ Kiểm tra rắn có đang RUNNING
   → cập nhật hình ảnh và điểm
 ```
 
-`snake_step()` tự kiểm tra trạng thái ở đầu hàm. Nếu đang Pause hoặc ván đã kết thúc, nó trả về 0 và không cập nhật tọa độ, chiều dài hoặc điểm.
+`snake_step()` tự kiểm tra trạng thái ở đầu hàm. Nếu ván đã kết thúc, nó trả về 0 và không cập nhật tọa độ, chiều dài hoặc điểm.
 
 ### 2.4. Tính vị trí đầu sắp tới trước khi sửa thân rắn
 
@@ -585,7 +585,7 @@ if (app_state==APP_STATE_GAME && shown_score!=snake_get_score()) {
 
 Hàm này cập nhật các chữ số cần hiển thị; việc quét LED thực hiện định kỳ qua `led7seg_scan(now_ms)` trong vòng lặp chính. Do đó, tăng điểm không cần một vòng chờ riêng để xuất từng chữ số.
 
-Khi GAME OVER hoặc WIN, Nokia và LCD hiển thị kết quả cuối ván. Việc lưu kỷ lục EEPROM được thực hiện khi ván kết thúc, không phải mỗi lần rắn ăn. Điểm trong `score` là dữ liệu của ván hiện tại và được đặt về 0 khi chơi lại.
+Khi GAME OVER hoặc WIN, Nokia và LCD hiển thị kết quả cuối ván. Điểm trong `score` là dữ liệu của ván hiện tại và được đặt về 0 khi chơi lại.
 
 ### 2.17. Theo dõi trọn một lần ăn từ đầu đến cuối
 

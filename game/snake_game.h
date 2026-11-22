@@ -21,7 +21,6 @@ typedef enum {
 
 typedef enum {
     SNAKE_RUNNING=0,
-    SNAKE_PAUSED,
     SNAKE_GAME_OVER,
     SNAKE_WIN
 } SnakeState;

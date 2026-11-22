@@ -286,11 +286,6 @@ void snake_handle_key(KeyEvent key)
         snake_init();
         return;
     }
-    if (key==KEY_PAUSE) {
-        if (state==SNAKE_RUNNING) state=SNAKE_PAUSED;
-        else if (state==SNAKE_PAUSED) state=SNAKE_RUNNING;
-        return;
-    }
     if (state!=SNAKE_RUNNING || turn_queued) return;
     if (key==KEY_UP) requested=DIR_UP;
     else if (key==KEY_DOWN) requested=DIR_DOWN;
@@ -590,7 +585,7 @@ unsigned char game_menu_handle_key(KeyEvent key)
     } else if (key==KEY_DOWN) {
         if (selected_level==GAME_LEVEL_HARD) selected_level=GAME_LEVEL_NORMAL;
         else selected_level=(GameLevel)(selected_level+1);
-    } else if (key==KEY_PAUSE) return 1;
+    } else if (key==KEY_CONFIRM) return 1;
     return 0;
 }
 
@@ -630,7 +625,7 @@ unsigned char game_map_menu_handle_key(KeyEvent key)
     } else if (key==KEY_DOWN) {
         if (selected_map==MAP_LABYRINTH) selected_map=MAP_CLASSIC;
         else selected_map=(MapId)(selected_map+1);
-    } else if (key==KEY_PAUSE) return 1;
+    } else if (key==KEY_CONFIRM) return 1;
     return 0;
 }
 
@@ -652,7 +647,6 @@ void game_map_menu_render(GameLevel level)
 
 /* ---------- game_render ---------- */
 
-static flash char paused_text[]="PAUSED";
 static flash char over_text[]="GAME OVER";
 static flash char win_text[]="YOU WIN";
 static flash char restart_text[]="9:RESTART";
@@ -727,5 +721,4 @@ void game_render(void)
                           (unsigned char)(point.y*CELL_SIZE),
                           CELL_SIZE-1,CELL_SIZE-1);
     }
-    if (state==SNAKE_PAUSED) display_text(0,0,paused_text);
 }

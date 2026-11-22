@@ -28,7 +28,7 @@ Xuyên biên chỉ đổi vị trí dự kiến. Nếu ô đến ở cạnh đ�
 
 ## 2. Cách chương trình thực hiện
 
-Các hàm dùng chung nằm trong [game/game.c](../../game/game.c). Cấu hình lưới nằm trong [config/board_config.h](../../config/board_config.h).
+Các hàm dùng chung nằm trong [game/game.c](../game/game.c). Cấu hình lưới nằm trong [config/board_config.h](../config/board_config.h).
 
 ### 2.1. Quy ước lưới và hướng
 

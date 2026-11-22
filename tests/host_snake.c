@@ -131,9 +131,8 @@ static void check_reverse_rules(void)
     food.x=9u; food.y=4u; food_type=FOOD_STAR;
     assert(snake_step()==1 && score==80u && current_length==6u);
     assert(segments[0].x==4u && direction==DIR_LEFT);
-    snake_handle_key(KEY_PAUSE);
-    assert(snake_step()==0 && segments[0].x==4u);
-    snake_handle_key(KEY_PAUSE);
+    snake_handle_key(KEY_CONFIRM);
+    assert(snake_state()==SNAKE_RUNNING && segments[0].x==4u);
     food.x=10u; food.y=7u;
     assert(snake_step()==1 && segments[0].x==3u && score==80u);
 
@@ -232,10 +231,9 @@ static void check_all_combinations(void)
             assert(segments[0].x==((level==GAME_LEVEL_HARD)?5u:8u));
             check_food();
             assert(!dynamic_obstacle_update(DYNAMIC_OBSTACLE_INTERVAL_MS-1UL));
-            snake_handle_key(KEY_PAUSE);
-            assert(!dynamic_obstacle_update(60000UL));
+            snake_handle_key(KEY_CONFIRM);
+            assert(snake_state()==SNAKE_RUNNING);
             assert(dynamic_obstacle_get_count()==0u);
-            snake_handle_key(KEY_PAUSE);
             assert(dynamic_obstacle_update(1UL));
             assert(dynamic_obstacle_get_count()==1u);
             assert(dynamic_obstacle_playable_cells()==game_map_get_free_cells()-3u);
@@ -286,7 +284,10 @@ int main(void)
     assert(game_menu_selected()==GAME_LEVEL_HARD);
     game_menu_handle_key(KEY_DOWN);
     assert(game_menu_selected()==GAME_LEVEL_NORMAL);
-    assert(game_menu_handle_key(KEY_PAUSE));
+    assert(game_menu_handle_key(KEY_CONFIRM));
+    game_map_menu_init(MAP_CLASSIC);
+    assert(game_map_menu_handle_key(KEY_CONFIRM));
+    assert(game_map_menu_selected()==MAP_CLASSIC);
     assert(game_get_move_period(GAME_LEVEL_NORMAL)==300u);
     assert(game_get_move_period(GAME_LEVEL_HARD)==250u);
     snake_set_level((GameLevel)0);
@@ -314,11 +315,11 @@ int main(void)
     snake_handle_key(KEY_DOWN); /* A second turn cannot be queued. */
     snake_step();
     head=snake_segment(0); assert(head.x==7 && head.y==3);
-    snake_handle_key(KEY_PAUSE);
-    assert(snake_state()==SNAKE_PAUSED && snake_step()==0);
-    head=snake_segment(0); assert(head.x==7 && head.y==3);
-    snake_handle_key(KEY_PAUSE);
+    snake_handle_key(KEY_CONFIRM);
     assert(snake_state()==SNAKE_RUNNING);
+    food.x=0; food.y=0;
+    assert(snake_step()==1);
+    head=snake_segment(0); assert(head.x==7 && head.y==2);
 
     snake_handle_key(KEY_RESTART);
     food.x=8; food.y=4;
@@ -421,10 +422,10 @@ int main(void)
     assert(dynamic_obstacle_playable_cells()==109u);
     for (i=0;i<40u;++i) { place_food(); check_food();
         assert(!dynamic_obstacle_is_blocked(food.x,food.y)); }
-    snake_handle_key(KEY_PAUSE);
-    assert(!dynamic_obstacle_update(60000UL));
-    assert(dynamic_obstacle_get_count()==1u);
-    snake_handle_key(KEY_PAUSE);
+    snake_handle_key(KEY_CONFIRM);
+    assert(snake_state()==SNAKE_RUNNING);
+    assert(dynamic_obstacle_update(60000UL));
+    assert(dynamic_obstacle_get_count()==2u);
     for (i=0;i<20u;++i) dynamic_obstacle_update(20000UL);
     assert(dynamic_obstacle_get_count()==DYNAMIC_OBSTACLE_MAX_COUNT);
     assert(!dynamic_obstacle_update(20000UL));

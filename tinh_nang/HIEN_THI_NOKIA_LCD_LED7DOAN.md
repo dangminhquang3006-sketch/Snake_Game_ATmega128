@@ -10,7 +10,7 @@ Giả sử đang chơi HARD–PILLARS, điểm 80 và đã có 2 thanh chắn:
 | LED 7 đoạn | `0080` |
 | LCD 16×2 | `HARD PILLARS` và `OBST:02 PLAYING` |
 
-Nhấn 5: Nokia vẫn hiện ván và thêm chữ `PAUSED`, LCD đổi thành `OBST:02 PAUSED`, LED giữ `0080`. Khi GAME OVER, Nokia/LCD chuyển sang kết quả và điểm cuối, còn LED tiếp tục hiện điểm đó.
+Phím 5 được bỏ qua khi đang chơi. Khi GAME OVER, Nokia/LCD chuyển sang kết quả và điểm cuối, còn LED giữ điểm đó.
 
 ```text
 Dữ liệu game
@@ -23,7 +23,7 @@ Ba thiết bị chia sẻ cùng dữ liệu ván nhưng dùng cách cập nhật
 
 ## 2. Cách chương trình thực hiện
 
-Các driver là [drivers/display.c](../../drivers/display.c), [drivers/lcd1602.c](../../drivers/lcd1602.c), [drivers/led7seg.c](../../drivers/led7seg.c). [game/game.c](../../game/game.c) chuẩn bị hình vẽ, còn [main.c](../../main.c) gọi phục vụ theo trạng thái và đồng hồ.
+Các driver là [drivers/display.c](../drivers/display.c), [drivers/lcd1602.c](../drivers/lcd1602.c), [drivers/led7seg.c](../drivers/led7seg.c). [game/game.c](../game/game.c) chuẩn bị hình vẽ, còn [main.c](../main.c) gọi phục vụ theo trạng thái và đồng hồ.
 
 ### 2.1. Phân chia trách nhiệm
 
@@ -35,7 +35,7 @@ Các driver là [drivers/display.c](../../drivers/display.c), [drivers/lcd1602.c
 | Driver `led7seg` | Tách số thành 4 chữ số, xuất mẫu segment và chọn digit |
 | `main.c` | Điều phối cờ vẽ, cập nhật trạng thái, quét LED và phục vụ LCD |
 
-Điểm khi đang chơi được hiện trên LED 7 đoạn. LCD đang chơi hiện Level, Map, số thanh và PLAYING/PAUSED. Nokia đang chơi tập trung vùng đồ họa; điểm được in trên Nokia ở màn kết quả.
+Điểm khi đang chơi được hiện trên LED 7 đoạn. LCD đang chơi hiện Level, Map, số thanh và PLAYING. Nokia đang chơi tập trung vùng đồ họa; điểm được in trên Nokia ở màn kết quả.
 
 ### 2.2. Các chân và cấu hình thư viện
 
@@ -52,7 +52,7 @@ LED dùng nhiều bit rải trên PORTA, PORTD, PORTF:
 | Segment D, E, F, G | PD1, PD2, PF2, PD3 |
 | DP | PF7, được giữ tắt |
 
-Các mask trong [config/board_config.h](../../config/board_config.h) mô tả đúng các bit này. Mức cấu hình hiện tại là chọn digit bằng 1 và bật segment bằng 0 cho LED common-anode trực tiếp.
+Các mask trong [config/board_config.h](../config/board_config.h) mô tả đúng các bit này. Mức cấu hình hiện tại là chọn digit bằng 1 và bật segment bằng 0 cho LED common-anode trực tiếp.
 
 ### 2.3. Khởi tạo Nokia và font
 
@@ -137,13 +137,12 @@ void game_render(void)
                           (unsigned char)(point.y*CELL_SIZE),
                           CELL_SIZE-1,CELL_SIZE-1);
     }
-    if (state==SNAKE_PAUSED) display_text(0,0,paused_text);
 }
 ```
 
 Hàm xóa màn hình trước. Nếu GAME OVER hoặc WIN, nó vẽ thông báo và điểm rồi trả về ngay, không vẽ tiếp map.
 
-Khi RUNNING/PAUSED, thứ tự là tường cố định → thanh chắn → mồi → các đốt rắn. Cuối cùng, nếu Pause thì thêm chữ `PAUSED`. Dữ liệu logic đã kiểm tra các đối tượng không được chồng lên nhau ở những trường hợp đặt mồi/vật cản hợp lệ.
+Khi RUNNING, thứ tự vẽ là tường cố định → thanh chắn → mồi → các đốt rắn. Dữ liệu logic đã kiểm tra các đối tượng không được chồng lên nhau ở những trường hợp đặt mồi/vật cản hợp lệ.
 
 Không có một hình con rắn riêng được kéo dài hoặc di chuyển trên màn hình độc lập. Hình vẽ được tạo lại từ các tọa độ sau khi xử lý bước đi.
 
@@ -155,7 +154,7 @@ Chuỗi hằng `flash char` dùng `display_text()` → `glcd_outtextxyf()`. Chu�
 
 ### 2.7. Khi nào `main.c` yêu cầu vẽ lại?
 
-Cờ `redraw` được bật khi đổi lựa chọn menu, vào ván, bước di chuyển làm thay đổi trạng thái/hình ảnh, Pause/Resume, Restart hoặc sinh được thanh chắn.
+Cờ `redraw` được bật khi đổi lựa chọn menu, vào ván, bước di chuyển làm thay đổi trạng thái/hình ảnh, Restart hoặc sinh được thanh chắn.
 
 Cuối lượt, `main.c` tạm blank LED, gọi hàm menu hoặc game phù hợp rồi resume LED. Nó không vẽ toàn Nokia ở mọi vòng lặp khi không có thay đổi.
 
@@ -248,11 +247,11 @@ Mỗi lần đến chu kỳ `LED7_SCAN_MS=2` ms:
 4. Bật đúng digit tương ứng.
 5. Ghi lại `last_scan_ms`.
 
-Nếu phục vụ đều, 4 digit mất khoảng 8 ms cho một vòng, tương ứng khoảng 125 vòng/giây. Đây là chu kỳ danh định từ cấu hình, không phải tần số đã đo; vẽ GLCD, ghi LCD hoặc EEPROM trong vòng chính có thể kéo dài khoảng cách giữa các lần quét.
+Nếu phục vụ đều, 4 digit mất khoảng 8 ms cho một vòng, tương ứng khoảng 125 vòng/giây. Đây là chu kỳ danh định từ cấu hình, không phải tần số đã đo; vẽ GLCD hoặc ghi LCD trong vòng chính có thể kéo dài khoảng cách giữa các lần quét.
 
 Hàm không sinh bù nhiều lần quét khi bị trễ. Nó chuyển một digit ở một lần gọi đủ thời gian.
 
-### 2.11. Blank, Resume và Clear khác nhau thế nào?
+### 2.11. Tạm tắt digit, khôi phục hiển thị và Clear khác nhau thế nào?
 
 | Hàm | Hành vi |
 |---|---|
@@ -260,7 +259,7 @@ Hàm không sinh bù nhiều lần quét khi bị trễ. Nó chuyển một digi
 | `led7seg_resume()` | Nếu đã quét và còn enabled, xuất lại mẫu và bật digit hiện tại |
 | `led7seg_clear()` | Đặt enabled=0, tắt digit và xuất mẫu không sáng |
 
-Trong game, blank/resume bao quanh các thao tác GLCD, LCD hoặc xử lý EEPROM. Chúng tránh để một digit cứ sáng suốt khoảng thao tác dài, và giúp tái xuất mẫu sau khi phục vụ ngoại vi có dùng chung port.
+Trong game, blank/resume bao quanh các thao tác GLCD hoặc LCD. Chúng tránh để một digit cứ sáng suốt khoảng thao tác dài, và giúp tái xuất mẫu sau khi phục vụ ngoại vi có dùng chung port.
 
 Chỉ gọi blank không xóa điểm hoặc tắt bộ quét vĩnh viễn. Khi muốn thể hiện điểm 0 ở menu, chương trình gọi `led7seg_set_number(0)`.
 
@@ -282,11 +281,11 @@ Dòng 1 là chỉ số 0–15, dòng 2 là 16–31. `shown` là bản theo dõi 
 
 `copy_flash()` chép chuỗi từ Flash vào desired, dừng trước khi vượt độ dài dòng hoặc cuối mảng. `put_four_digits()` ghép một số thành bốn ký tự ASCII, không dùng `printf()` để định dạng.
 
-Trong ván, `lcd1602_show_obstacles()` ghép Level/Map ở dòng trên, `OBST:00 PLAYING` hoặc `OBST:00 PAUSED` ở dòng dưới, rồi điền số thanh tại offset 21 và 22, tức cột 5 và 6 của dòng 2.
+Trong ván, `lcd1602_show_obstacles()` ghép Level/Map ở dòng trên, `OBST:00 PLAYING` ở dòng dưới, rồi điền số thanh tại offset 21 và 22, tức cột 5 và 6 của dòng 2.
 
-Menu Level hiện lựa chọn cùng kỷ lục CLASSIC của Level đó. Menu Map hiện Map và kỷ lục đúng tổ hợp đã trỏ tới. Màn cuối hiện thắng/thua và điểm.
+Menu Level hiện `SELECT LEVEL` và Level đang chọn. Menu Map hiện `SELECT MAP` và Map đang chọn. Màn cuối hiện thắng/thua và điểm.
 
-Driver còn có các hàm `lcd1602_show_playing()`/`show_paused()` dùng chuỗi trạng thái khác. Luồng game hiện tại đi qua `lcd_for_state()` và `show_obstacles()`, nên nội dung đang chơi thực tế là dạng có số thanh chắn.
+Driver còn có hàm `lcd1602_show_playing()` dùng chuỗi `STATUS: PLAYING` cho kiểm tra hiển thị. Luồng game hiện tại đi qua `lcd_for_state()` và `show_obstacles()`, nên nội dung đang chơi thực tế là dạng có số thanh chắn.
 
 ### 2.14. Chỉ ghi ký tự LCD thay đổi, một ký tự mỗi lượt
 
@@ -317,18 +316,17 @@ Trong service:
 4. Gửi một ký tự bằng `lcd_putchar()`.
 5. Cập nhật shown, chuyển điểm bắt đầu sang vị trí sau rồi trả về.
 
-Một lần gọi chỉ ghi tối đa một ký tự. Những lần lặp sau tiếp tục làm phần còn thiếu. Ví dụ PLAYING đổi sang PAUSED hoặc số thanh 01 sang 02 chỉ cần ghi các vị trí khác, không buộc xóa toàn LCD vật lý rồi ghi lại 32 ký tự mỗi lần.
+Một lần gọi chỉ ghi tối đa một ký tự. Những lần lặp sau tiếp tục làm phần còn thiếu. Ví dụ số thanh 01 sang 02 hoặc chuyển sang màn GAME OVER chỉ cần ghi các vị trí khác, không buộc xóa toàn LCD vật lý rồi ghi lại 32 ký tự mỗi lần.
 
 Nếu trạng thái mới tới khi cập nhật cũ chưa xong, desired nhận nội dung mới; service tiếp tục tìm điểm khác với nội dung mong muốn hiện tại. Đây là cập nhật hội tụ theo bộ đệm, không phải hàng đợi từng màn hình cũ.
 
-### 2.15. Luồng chung của một lần tăng điểm hoặc Pause
+### 2.15. Luồng chung của một lần cập nhật game
 
 | Sự kiện | Nokia | LED 7 đoạn | LCD |
 |---|---|---|---|
 | Bước đi không ăn | Vẽ vị trí rắn mới | Giữ chữ số | Giữ thông tin nếu không đổi |
 | Ăn mồi | Vẽ thân dài thêm và mồi mới; HARD có thể đổi đầu | Nhận điểm mới | Không cần hiện điểm đang chơi |
 | Sinh thanh thành công | Vẽ thêm thanh | Giữ điểm | Đổi số thanh |
-| Pause/Resume | Thêm/bỏ chữ PAUSED | Tiếp tục quét điểm cũ | Đổi trạng thái |
 | WIN/GAME OVER | Thay bằng màn kết quả | Giữ điểm cuối | Hiện kết quả và điểm |
 | Restart | Vẽ ván mới | Về 0000 | Hiện trạng thái ván mới |
 

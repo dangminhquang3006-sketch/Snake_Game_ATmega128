@@ -24,7 +24,7 @@ Menu Level ──5──> Menu Map ──5, map hợp lệ──> Chơi
 
 ## 2. Cách chương trình thực hiện
 
-Menu được triển khai trong [game/game.c](../../game/game.c); [main.c](../../main.c) giữ trạng thái màn hình và thực hiện việc bắt đầu ván. Bản đồ được giải thích riêng trong [BAN_DO_VA_TUONG_CO_DINH.md](BAN_DO_VA_TUONG_CO_DINH.md).
+Menu được triển khai trong [game/game.c](../game/game.c); [main.c](../main.c) giữ trạng thái màn hình và thực hiện việc bắt đầu ván. Bản đồ được giải thích riêng trong [BAN_DO_VA_TUONG_CO_DINH.md](BAN_DO_VA_TUONG_CO_DINH.md).
 
 ### 2.1. Tách trạng thái ứng dụng khỏi trạng thái rắn
 
@@ -39,7 +39,7 @@ typedef enum { APP_STATE_LEVEL_SELECT=0, APP_STATE_MAP_SELECT,
 | `APP_STATE_MAP_SELECT` | Nhận lựa chọn CLASSIC/PILLARS/LABYRINTH |
 | `APP_STATE_GAME` | Chạy ván hoặc hiện kết quả của ván |
 
-`SnakeState` là biến trạng thái khác: RUNNING/PAUSED/GAME OVER/WIN. GAME OVER không phải trạng thái thứ tư của `AppState`; màn kết quả vẫn thuộc `APP_STATE_GAME`.
+`SnakeState` là biến trạng thái khác: RUNNING/GAME OVER/WIN. GAME OVER không phải trạng thái thứ tư của `AppState`; màn kết quả vẫn thuộc `APP_STATE_GAME`.
 
 Từ khóa `typedef enum` đặt tên cho các giá trị trạng thái để các nhánh `if` đọc được theo ý nghĩa, thay vì so sánh những con số khó nhớ.
 
@@ -58,7 +58,7 @@ Di chuyển con trỏ chưa làm rắn bắt đầu chạy. Chương trình ch�
 
 ### 2.3. Khởi tạo menu lúc bật chương trình
 
-Ở nhánh game bình thường của `main()`, sau khi khởi tạo LCD, LED, keypad và đọc kỷ lục:
+Ở nhánh game bình thường của `main()`, sau khi khởi tạo LCD, LED, keypad trước khi hiển thị menu:
 
 ```c
 game_menu_init(GAME_LEVEL_NORMAL);
@@ -69,23 +69,22 @@ move_period_ms=game_get_move_period(current_level);
 app_state=APP_STATE_LEVEL_SELECT;
 shown_score=0;
 led7seg_set_number(0);
-lcd1602_show_menu(current_level,
-                 highscore_get(current_level,MAP_CLASSIC,MODE_SURVIVAL));
+lcd1602_show_menu(current_level);
 ```
 
-NORMAL và CLASSIC là các giá trị mặc định; `game_map_menu_init(current_map)` đặt con trỏ Map theo giá trị đó. `app_state` được đặt về màn Level. LED bằng 0, LCD hiển thị lựa chọn và kỷ lục.
+NORMAL và CLASSIC là các giá trị mặc định; `game_map_menu_init(current_map)` đặt con trỏ Map theo giá trị đó. `app_state` được đặt về màn Level. LED bằng 0, LCD hiển thị Level đang chọn.
 
 Lúc này chưa gọi `snake_init()` cho một ván mới. Sau khi Timer và ngắt được bật, chương trình vẽ menu rồi đi vào vòng lặp phục vụ phím.
 
 ### 2.4. Ánh xạ phím theo ngữ cảnh menu
 
-Keypad đổi phím vật lý 2/8/5 thành `KEY_UP`, `KEY_DOWN`, `KEY_PAUSE`. Tên `KEY_PAUSE` được dùng chung cho phím 5, nhưng trong menu nó mang nghĩa xác nhận.
+Keypad đổi phím vật lý 2/8/5 thành `KEY_UP`, `KEY_DOWN`, `KEY_CONFIRM`. Phím 5 chỉ xác nhận lựa chọn trong menu; khi đang chơi nó không tạo hành động.
 
 | Phím vật lý | Sự kiện | Level | Map |
 |---|---|---|---|
 | 2 | `KEY_UP` | Chọn lên | Chọn lên |
 | 8 | `KEY_DOWN` | Chọn xuống | Chọn xuống |
-| 5 | `KEY_PAUSE` | Xác nhận Level | Xác nhận Map |
+| 5 | `KEY_CONFIRM` | Xác nhận Level | Xác nhận Map |
 | 1 | `KEY_MENU` | Không có hành động menu đặc biệt | Quay về Level |
 
 Mỗi lần nhấn cần được nhả trước lần tiếp theo vì keypad không tự lặp sự kiện khi giữ phím. Xem [DIEU_KHIEN_KEYPAD.md](DIEU_KHIEN_KEYPAD.md).
@@ -101,12 +100,12 @@ unsigned char game_menu_handle_key(KeyEvent key)
     } else if (key==KEY_DOWN) {
         if (selected_level==GAME_LEVEL_HARD) selected_level=GAME_LEVEL_NORMAL;
         else selected_level=(GameLevel)(selected_level+1);
-    } else if (key==KEY_PAUSE) return 1;
+    } else if (key==KEY_CONFIRM) return 1;
     return 0;
 }
 ```
 
-`GAME_LEVEL_NORMAL=1`, `GAME_LEVEL_HARD=2`; các ID này được giữ để tương thích kỷ lục cũ. Chương trình không đưa ID 0 thành một Level trong menu.
+`GAME_LEVEL_NORMAL=1`, `GAME_LEVEL_HARD=2`; đây là các ID Level của chương trình. Chương trình không đưa ID 0 thành một Level trong menu.
 
 - Nhấn UP ở NORMAL thì quay vòng lên HARD.
 - Nhấn DOWN ở HARD thì quay vòng về NORMAL.
@@ -127,7 +126,7 @@ unsigned char game_map_menu_handle_key(KeyEvent key)
     } else if (key==KEY_DOWN) {
         if (selected_map==MAP_LABYRINTH) selected_map=MAP_CLASSIC;
         else selected_map=(MapId)(selected_map+1);
-    } else if (key==KEY_PAUSE) return 1;
+    } else if (key==KEY_CONFIRM) return 1;
     return 0;
 }
 ```
@@ -150,7 +149,6 @@ snake_init();
 app_state=APP_STATE_GAME;
 last_move_ms=now_ms;
 last_service_ms=now_ms;
-result_saved=0;
 shown_score=0;
 led7seg_set_number(0);
 redraw=1;
@@ -165,7 +163,6 @@ update_lcd=1;
 | `snake_init()` | Tạo rắn 3 đốt, điểm 0, mồi mới, xóa vật cản sinh thêm |
 | Đặt `app_state=APP_STATE_GAME` | Chuyển vòng lặp sang xử lý ván |
 | Đặt lại các mốc thời gian | Không tính thời gian đứng ở menu vào bước đi hoặc chu kỳ vật cản |
-| Đặt `result_saved=0` | Cho phép xử lý kết quả khi ván mới kết thúc |
 | Bật `redraw`, `update_lcd` | Hiện vùng chơi và thông tin ván mới |
 
 Nếu map không hợp lệ, code hiện `INVALID MAP`; không gọi `snake_init()` và không chuyển sang trạng thái chơi. Không có bước chọn STANDARD/SURVIVAL riêng giữa Map và game.
@@ -191,10 +188,10 @@ Menu Map làm tương tự với ba lựa chọn và hiện Level đã xác nh�
 
 Cuối vòng lặp, `redraw=1` khiến `main.c` chọn `game_menu_render()`, `game_map_menu_render()` hoặc `game_render()` theo `app_state`. Cờ `update_lcd` điều khiển nhánh chuẩn bị nội dung LCD tương ứng.
 
-### 2.9. Hiển thị kỷ lục và quay lại bước trước
+### 2.9. Hiển thị lựa chọn và quay lại bước trước
 
-Ở menu Level, LCD lấy kỷ lục của Level đang trỏ tới với **CLASSIC**, trong nhóm lưu trữ dùng cho luật vật cản. Đây không phải điểm lớn nhất gộp từ mọi map. Ở menu Map, LCD lấy đúng tổ hợp Level đã xác nhận và Map đang trỏ tới.
+Ở menu Level, LCD hiện `SELECT LEVEL` và tên Level đang trỏ tới. Ở menu Map, LCD hiện `SELECT MAP` và tên Map đang trỏ tới. Phần hiển thị chỉ cần lựa chọn hiện tại, không đọc dữ liệu lưu trữ.
 
-Phím 1 trong màn Map chỉ đổi `app_state` về Level và yêu cầu vẽ lại. Nó không tạo một ván chạy nền. Sau WIN/GAME OVER, phím 1 cũng về Level và đưa LED về 0; dữ liệu ván cũ chỉ được khởi tạo lại khi xác nhận Map để chơi tiếp.
+Phím 1 trong màn Map đổi `app_state` về Level và yêu cầu vẽ lại; không tạo một ván chạy nền. Sau WIN/GAME OVER, phím 1 cũng về Level và đưa LED về 0. Dữ liệu rắn được khởi tạo lại khi xác nhận Map để chơi tiếp.
 
-Phím 9 ở màn kết quả giữ Level/Map rồi gọi `snake_init()` trực tiếp. Hai đường đi này được trình bày đầy đủ trong [CHET_VA_GAME_OVER.md](CHET_VA_GAME_OVER.md).
+Phím 9 ở màn kết quả giữ Level/Map rồi gọi `snake_init()` trực tiếp. Chi tiết nằm trong [CHET_VA_GAME_OVER.md](CHET_VA_GAME_OVER.md).

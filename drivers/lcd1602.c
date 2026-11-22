@@ -9,20 +9,17 @@ static unsigned char next_position=0;
 static flash char normal_name[]="NORMAL";
 static flash char hard_name[]="HARD";
 static flash char select_line[]="SELECT LEVEL";
-static flash char best_prefix[]="BEST:";
 static flash char playing_line2[]="STATUS: PLAYING";
 static flash char title_line[]="SNAKE GAME";
-static flash char paused_line2[]="GAME PAUSED";
 static flash char over_line1[]="GAME OVER";
 static flash char win_line1[]="YOU WIN!";
 static flash char score_prefix[]="SCORE: ";
 static flash char ready_line2[]="STATUS: READY";
-static flash char map_prefix[]="MAP: ";
+static flash char select_map_line[]="SELECT MAP";
 static flash char classic_name[]="CLASSIC";
 static flash char pillars_name[]="PILLARS";
 static flash char labyrinth_name[]="LABYRINTH";
 static flash char obst_playing[]="OBST:00 PLAYING";
-static flash char obst_paused[]="OBST:00 PAUSED";
 
 static void spaces(void)
 {
@@ -86,36 +83,24 @@ void lcd1602_init(void)
     next_position=0;
 }
 
-void lcd1602_show_menu(GameLevel level, unsigned int best)
+void lcd1602_show_menu(GameLevel level)
 {
-    unsigned char length,offset;
     spaces();
     copy_flash(0,select_line);
-    length=copy_level(16,level);
-    offset=(unsigned char)(16+length+1);
-    copy_flash(offset,best_prefix);
-    put_four_digits((unsigned char)(offset+5),best);
+    copy_level(16,level);
 }
 
-void lcd1602_show_map_menu(MapId map, unsigned int best)
+void lcd1602_show_map_menu(MapId map)
 {
     spaces();
-    copy_flash(0,map_prefix);
-    copy_map(5,map);
-    copy_flash(16,best_prefix);
-    put_four_digits(22,best);
+    copy_flash(0,select_map_line);
+    copy_map(16,map);
 }
 
 void lcd1602_show_playing(GameLevel level, MapId map)
 {
     show_game_line(level,map);
     copy_flash(16,playing_line2);
-}
-
-void lcd1602_show_paused(GameLevel level, MapId map)
-{
-    show_game_line(level,map);
-    copy_flash(16,paused_line2);
 }
 
 void lcd1602_show_result(unsigned char won, unsigned int score)
@@ -129,11 +114,10 @@ void lcd1602_show_result(unsigned char won, unsigned int score)
 }
 
 void lcd1602_show_obstacles(GameLevel level,MapId map,
-                            unsigned char obstacles,unsigned char paused)
+                            unsigned char obstacles)
 {
     show_game_line(level,map);
-    if (paused) copy_flash(16,obst_paused);
-    else copy_flash(16,obst_playing);
+    copy_flash(16,obst_playing);
     desired[21]=(char)('0'+obstacles/10u);
     desired[22]=(char)('0'+obstacles%10u);
 }
