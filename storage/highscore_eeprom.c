@@ -64,13 +64,13 @@ static unsigned char crc_add(unsigned char crc,unsigned char value)
     return crc;
 }
 
-/* Conservative reachable ceiling: every normal fruit is a STAR, and BONUS
-   adds one 30-point fruit after each group of three normal fruits. */
-static unsigned int score_limit_v4(MapId map,GameMode mode)
+/* Validate legacy v4 records, including the two retired mode slots.
+   Runtime modes use only stored mode 0 (STANDARD) and 3 (SURVIVAL). */
+static unsigned int score_limit_v4(MapId map,unsigned char stored_mode)
 {
     unsigned int fruits=(unsigned int)(game_map_free_cells_for(map)-3u);
     unsigned int limit=(unsigned int)(fruits*50u);
-    if (mode==MODE_BONUS || mode==MODE_TIME_ATTACK)
+    if (stored_mode==1u || stored_mode==2u)
         limit=(unsigned int)(limit+(fruits/3u)*30u);
     return limit;
 }
@@ -97,7 +97,7 @@ static unsigned char read_record(unsigned char version,unsigned char slot,
         value=(unsigned int)read_byte(version,slot,(unsigned char)(5u+2u*i)) |
               ((unsigned int)read_byte(version,slot,(unsigned char)(6u+2u*i))<<8);
         if (version==4u)
-            limit=score_limit_v4((MapId)(i%3u),(GameMode)(i/9u));
+            limit=score_limit_v4((MapId)(i%3u),(unsigned char)(i/9u));
         else {
             limit=(version==1u) ? GAME_MAX_SCORE :
                   (unsigned int)(game_map_free_cells_for((MapId)(i%3u))-3u)*10u;
@@ -141,7 +141,7 @@ unsigned int highscore_get(GameLevel level,MapId map,GameMode mode)
 {
     if ((unsigned int)level>=3u || (unsigned int)map>=MAP_COUNT ||
         (unsigned int)mode>=MODE_COUNT) return 0;
-    return best_scores[(unsigned char)((unsigned char)mode*9u+
+    return best_scores[(unsigned char)((mode==MODE_SURVIVAL ? 27u : 0u)+
         (unsigned char)level*3u+(unsigned char)map)];
 }
 
@@ -154,9 +154,9 @@ HighscoreSaveResult highscore_record_result(GameLevel level,MapId map,
     if ((unsigned int)level>=3u || (unsigned int)map>=MAP_COUNT ||
         (unsigned int)mode>=MODE_COUNT)
         return HIGHSCORE_SAVE_FAILED;
-    limit=score_limit_v4(map,mode);
+    limit=score_limit_v4(map,(unsigned char)(mode==MODE_SURVIVAL ? 3u : 0u));
     if (score>limit || score%10u!=0u) return HIGHSCORE_SAVE_FAILED;
-    index=(unsigned char)((unsigned char)mode*9u+
+    index=(unsigned char)((mode==MODE_SURVIVAL ? 27u : 0u)+
                           (unsigned char)level*3u+(unsigned char)map);
     if (score<=best_scores[index]) return HIGHSCORE_UNCHANGED;
     old_score=best_scores[index]; best_scores[index]=score;

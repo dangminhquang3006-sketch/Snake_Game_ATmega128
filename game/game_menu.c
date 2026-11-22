@@ -26,10 +26,6 @@ static flash char labyrinth_plain[]="  LABYRINTH";
 static flash char mode_title[]="SELECT MODE";
 static flash char standard_selected[]="> STANDARD";
 static flash char standard_plain[]="  STANDARD";
-static flash char bonus_selected[]="> BONUS";
-static flash char bonus_plain[]="  BONUS";
-static flash char attack_selected[]="> TIME ATTACK";
-static flash char attack_plain[]="  TIME ATTACK";
 static flash char survival_selected[]="> SURVIVAL";
 static flash char survival_plain[]="  SURVIVAL";
 
@@ -137,10 +133,6 @@ void game_mode_menu_render(void)
     display_text(0,0,mode_title);
     if (selected_mode==MODE_STANDARD) display_text(0,8,standard_selected);
     else display_text(0,8,standard_plain);
-    if (selected_mode==MODE_BONUS) display_text(0,18,bonus_selected);
-    else display_text(0,18,bonus_plain);
-    if (selected_mode==MODE_TIME_ATTACK) display_text(0,28,attack_selected);
-    else display_text(0,28,attack_plain);
-    if (selected_mode==MODE_SURVIVAL) display_text(0,38,survival_selected);
-    else display_text(0,38,survival_plain);
+    if (selected_mode==MODE_SURVIVAL) display_text(0,20,survival_selected);
+    else display_text(0,20,survival_plain);
 }

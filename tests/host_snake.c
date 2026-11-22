@@ -102,14 +102,6 @@ static void check_wrap_rules(void)
         assert(score==((edge==0u)?10u:((edge==1u)?20u:50u)));
         assert(segments[0].x==0u && segments[0].y==4u);
     }
-    assert(game_mode_select(MODE_BONUS));
-    snake_init();
-    segments[0].x=13u; segments[0].y=4u;
-    direction=DIR_RIGHT; next_direction=DIR_RIGHT;
-    food.x=7u; food.y=7u;
-    head.x=0u; head.y=4u; bonus_food_spawn(head);
-    assert(snake_step()==1 && score==30u && current_length==3u);
-    assert(!bonus_food_active());
     snake_handle_key(KEY_RESTART);
     assert(snake_can_wrap() && snake_get_score()==0u && snake_length()==3u);
     assert(game_mode_select(MODE_STANDARD));
@@ -201,14 +193,6 @@ static void check_reverse_rules(void)
                            ((edge==2u)?DIR_DOWN:DIR_UP))));
     }
 
-    /* Bonus has no growth or reversal, even in HARD. */
-    assert(game_mode_select(MODE_BONUS));
-    snake_init();
-    food.x=10u; food.y=7u;
-    head.x=8u; head.y=4u; bonus_food_spawn(head);
-    assert(snake_step()==1 && score==30u && current_length==3u);
-    assert(segments[0].x==8u && direction==DIR_RIGHT);
-    assert(normal_foods_eaten==0u && !bonus_food_active());
     snake_handle_key(KEY_RESTART);
     assert(current_length==3u && score==0u && direction==DIR_RIGHT);
     assert(snake_can_wrap());
@@ -247,7 +231,6 @@ static void check_all_combinations(void)
                 assert(game_map_select((MapId)map));
                 assert(game_mode_select((GameMode)mode));
                 snake_set_level((GameLevel)level);
-                game_mode_reset();
                 snake_init();
                 assert(snake_state()==SNAKE_RUNNING);
                 assert(snake_length()==3u && snake_get_score()==0u);
@@ -258,8 +241,6 @@ static void check_all_combinations(void)
                 assert(snake_get_score()==10u && snake_length()==4u);
                 assert(segments[0].x==((level==2u)?5u:8u));
                 check_food();
-                if (mode==MODE_TIME_ATTACK)
-                    assert(game_mode_remaining_ms()==TIME_ATTACK_DURATION_MS);
                 if (mode==MODE_SURVIVAL)
                     assert(dynamic_obstacle_playable_cells()==
                            game_map_get_free_cells());
@@ -400,67 +381,11 @@ int main(void)
     assert(snake_state()==SNAKE_WIN);
     assert(snake_length()==112 && snake_get_score()==1090);
     assert(snake_step()==0);
-    assert(game_mode_select(MODE_BONUS));
-    snake_init();
-    for (i=0;i<3u;++i) {
-        segments[0].x=7; segments[0].y=4;
-        segments[1].x=6; segments[1].y=4;
-        segments[2].x=5; segments[2].y=4;
-        current_length=3;
-        direction=DIR_RIGHT; next_direction=DIR_RIGHT;
-        food.x=8; food.y=4;
-        food_type=FOOD_CIRCLE;
-        assert(snake_step()==1);
-    }
-    assert(normal_foods_eaten==3u && bonus_food_active());
-    head=bonus_food_position();
-    assert(!game_map_is_blocked(head.x,head.y));
-    assert(!(head.x==food.x && head.y==food.y));
-    assert(bonus_food_remaining_ms()==5000UL);
-    assert(!bonus_food_advance(2500UL));
-    assert(bonus_food_remaining_ms()==2500UL);
-    assert(bonus_food_advance(2500UL) && !bonus_food_active());
-    segments[0].x=7; segments[0].y=4;
-    segments[1].x=6; segments[1].y=4;
-    segments[2].x=5; segments[2].y=4;
-    current_length=3; direction=DIR_RIGHT; next_direction=DIR_RIGHT;
-    food.x=0; food.y=0;
-    head.x=8; head.y=4; bonus_food_spawn(head);
-    score=30;
-    assert(snake_step()==1);
-    assert(score==60u && current_length==3u && !bonus_food_active());
-    /* A live bonus cannot consume the sole cell needed by normal food. */
-    current_length=111u;
-    segments[0].x=0; segments[0].y=0;
-    i=1;
-    for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-        if (!(y==0 && (x==0 || x==1))) {
-            segments[i].x=x; segments[i].y=y; ++i;
-        }
-    head.x=1; head.y=0; bonus_food_spawn(head);
-    place_food();
-    assert(!bonus_food_active());
-    assert(food.x==1 && food.y==0);
-    assert(game_mode_select(MODE_TIME_ATTACK));
-    game_mode_reset();
-    assert(game_mode_seconds_display()==60u);
-    assert(!game_mode_advance(1UL) && game_mode_seconds_display()==60u);
-    assert(!game_mode_advance(999UL) && game_mode_seconds_display()==59u);
-    snake_init();
-    assert(game_mode_advance(59000UL));
-    snake_time_up();
-    assert(snake_state()==SNAKE_TIME_UP && snake_step()==0);
-    assert(game_mode_remaining_ms()==0UL);
-    snake_handle_key(KEY_RESTART);
-    game_mode_reset();
-    assert(snake_state()==SNAKE_RUNNING && !bonus_food_active());
-    assert(game_mode_seconds_display()==60u);
     assert(game_mode_select(MODE_STANDARD));
     snake_init();
-    normal_foods_eaten=2u;
     food.x=8; food.y=4;
     food_type=FOOD_CIRCLE;
-    assert(snake_step()==1 && !bonus_food_active());
+    assert(snake_step()==1);
     assert(!dynamic_obstacle_update(20000UL) && dynamic_obstacle_get_count()==0u);
     assert(game_mode_select(MODE_SURVIVAL));
     assert(game_map_select(MAP_PILLARS));
@@ -510,15 +435,14 @@ int main(void)
     assert(segments[0].x==head.x && segments[0].y==head.y);
     snake_handle_key(KEY_RESTART);
     assert(dynamic_obstacle_get_count()==0u && snake_get_score()==0u);
-    normal_foods_eaten=2u;
     food.x=8; food.y=4;
-    assert(snake_step()==1 && !bonus_food_active());
+    assert(snake_step()==1);
     check_wrap_rules();
     snake_set_level(GAME_LEVEL_HARD);
     check_map_win(MAP_CLASSIC);
     snake_set_level(GAME_LEVEL_EASY);
     check_reverse_rules();
     check_all_combinations();
-    puts("PASS: snake/maps, fruit, wrap, reverse, bonus/time attack and survival");
+    puts("PASS: snake/maps, fruit, wrap, reverse, standard and survival");
     return 0;
 }

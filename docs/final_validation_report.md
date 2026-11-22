@@ -1,3 +1,5 @@
+> Báo cáo lịch sử của phiên bản cũ. Cấu hình hiện tại chỉ còn STANDARD và SURVIVAL; xem README và báo cáo kiểm định mở rộng.
+
 # Báo cáo kiểm định cuối — Snake Game ATmega128
 
 **Ngày kiểm định source:** 2026-11-11 (America/New_York).  

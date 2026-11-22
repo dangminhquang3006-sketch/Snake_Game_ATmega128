@@ -2,7 +2,6 @@
 #include "snake_game.h"
 #include "game_map.h"
 #include "game_mode.h"
-#include "bonus_food.h"
 #include "dynamic_obstacle.h"
 
 typedef enum { DIR_UP=0, DIR_RIGHT, DIR_DOWN, DIR_LEFT } SnakeDirection;
@@ -12,7 +11,6 @@ static unsigned char current_length;
 static SnakePoint food;
 static FoodType food_type;
 static unsigned int score;
-static unsigned char normal_foods_eaten;
 static SnakeDirection direction;
 static SnakeDirection next_direction;
 static unsigned char turn_queued;
@@ -150,16 +148,8 @@ static void place_food(void)
     for (y=0; y<GRID_ROWS; ++y)
         for (x=0; x<GRID_COLS; ++x)
             if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
-                !occupied(x,y) &&
-                (!bonus_food_active() || bonus_food_position().x!=x ||
-                 bonus_food_position().y!=y)) ++empty_count;
-
-    if (empty_count==0 && bonus_food_active()) {
-        bonus_food_collect();
-        for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-            if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
                 !occupied(x,y)) ++empty_count;
-    }
+
     if (empty_count==0) {
         state=SNAKE_WIN;
         return;
@@ -168,9 +158,7 @@ static void place_food(void)
     for (y=0; y<GRID_ROWS; ++y) {
         for (x=0; x<GRID_COLS; ++x) {
             if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
-                !occupied(x,y) &&
-                (!bonus_food_active() || bonus_food_position().x!=x ||
-                 bonus_food_position().y!=y)) {
+                !occupied(x,y)) {
                 if (target==0) {
                     food.x=x;
                     food.y=y;
@@ -185,32 +173,6 @@ static void place_food(void)
     }
 }
 
-static void try_spawn_bonus(void)
-{
-    unsigned char x,y,count=0,target;
-    SnakePoint point;
-    if ((game_mode_get_current()!=MODE_BONUS &&
-         game_mode_get_current()!=MODE_TIME_ATTACK) ||
-        bonus_food_active()) return;
-    for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-        if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
-            !occupied(x,y) &&
-            !(food.x==x && food.y==y)) ++count;
-    if (count==0) return;
-    target=(unsigned char)(random_next()%count);
-    for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-        if (!game_map_is_blocked(x,y) && !dynamic_obstacle_is_blocked(x,y) &&
-            !occupied(x,y) &&
-            !(food.x==x && food.y==y)) {
-            if (target==0) {
-                point.x=x; point.y=y;
-                bonus_food_spawn(point);
-                return;
-            }
-            --target;
-        }
-}
-
 void snake_init(void)
 {
     dynamic_obstacle_reset();
@@ -220,8 +182,6 @@ void snake_init(void)
     current_length=SNAKE_INITIAL_LENGTH;
     score=0;
     food_type=FOOD_CIRCLE;
-    normal_foods_eaten=0;
-    bonus_food_reset();
     direction=DIR_RIGHT;
     next_direction=DIR_RIGHT;
     turn_queued=0;
@@ -255,7 +215,7 @@ void snake_handle_key(KeyEvent key)
 unsigned char snake_step(void)
 {
     signed int new_x,new_y;
-    unsigned char i,growing,eating_bonus,collision_limit;
+    unsigned char i,growing,collision_limit;
     SnakePoint new_head;
     if (state!=SNAKE_RUNNING) return 0;
 
@@ -282,9 +242,6 @@ unsigned char snake_step(void)
     new_head.x=(unsigned char)new_x;
     new_head.y=(unsigned char)new_y;
     growing=(unsigned char)(new_head.x==food.x && new_head.y==food.y);
-    eating_bonus=(unsigned char)(bonus_food_active() &&
-        new_head.x==bonus_food_position().x &&
-        new_head.y==bonus_food_position().y);
 
     /* The tail vacates only on a non-growing move. */
     collision_limit=growing ? current_length : (unsigned char)(current_length-1);
@@ -307,13 +264,6 @@ unsigned char snake_step(void)
             segments[i]=segments[i-1];
     }
     segments[0]=new_head;
-    if (eating_bonus) {
-        if (score<=65535u-BONUS_SCORE)
-            score=(unsigned int)(score+BONUS_SCORE);
-        else score=65535u;
-        bonus_food_collect();
-    }
-
     if (current_length==dynamic_obstacle_playable_cells()) state=SNAKE_WIN;
     else if (growing) {
         if (current_level==GAME_LEVEL_HARD) {
@@ -325,10 +275,7 @@ unsigned char snake_step(void)
             next_direction=direction;
             turn_queued=0u;
         }
-        ++normal_foods_eaten;
         place_food();
-        if (state==SNAKE_RUNNING &&
-            normal_foods_eaten%BONUS_TRIGGER_FOODS==0u) try_spawn_bonus();
     }
     return 1;
 }
@@ -336,11 +283,6 @@ unsigned char snake_step(void)
 SnakeState snake_state(void) { return state; }
 unsigned char snake_length(void) { return current_length; }
 unsigned int snake_get_score(void) { return score; }
-void snake_time_up(void)
-{
-    if (state==SNAKE_RUNNING && game_mode_get_current()==MODE_TIME_ATTACK)
-        state=SNAKE_TIME_UP;
-}
 SnakePoint snake_food(void) { return food; }
 FoodType snake_get_food_type(void) { return food_type; }
 

@@ -10,7 +10,6 @@
 #include "game/game_menu.h"
 #include "game/game_map.h"
 #include "game/game_mode.h"
-#include "game/bonus_food.h"
 #include "game/dynamic_obstacle.h"
 #include "storage/highscore_eeprom.h"
 
@@ -52,15 +51,10 @@ static flash char invalid_map_text[]="INVALID MAP";
 static void lcd_for_state(SnakeState state, GameLevel level, MapId map,
                           GameMode mode)
 {
-    if (state==SNAKE_TIME_UP) lcd1602_show_time_up(snake_get_score());
-    else if (mode==MODE_SURVIVAL &&
+    if (mode==MODE_SURVIVAL &&
              (state==SNAKE_RUNNING || state==SNAKE_PAUSED))
         lcd1602_show_survival(level,dynamic_obstacle_get_count(),
                               (unsigned char)(state==SNAKE_PAUSED));
-    else if (mode==MODE_TIME_ATTACK &&
-             (state==SNAKE_RUNNING || state==SNAKE_PAUSED))
-        lcd1602_show_time(game_mode_seconds_display(),
-                          (unsigned char)(state==SNAKE_PAUSED));
     else if (state==SNAKE_RUNNING) lcd1602_show_playing(level,map);
     else if (state==SNAKE_PAUSED) lcd1602_show_paused(level,map);
     else lcd1602_show_result((unsigned char)(state==SNAKE_WIN),
@@ -88,7 +82,6 @@ void main(void)
     MapId previous_map;
     GameMode current_mode;
     GameMode previous_mode;
-    unsigned char shown_seconds;
     unsigned char result_saved;
     AppState app_state;
     KeyEvent key;
@@ -196,7 +189,6 @@ void main(void)
 #else
     last_move_ms=timer_get_ms();
     last_service_ms=last_move_ms;
-    shown_seconds=60u;
     result_saved=0;
     led7seg_blank();
     game_menu_render();
@@ -210,22 +202,6 @@ void main(void)
         running_elapsed_ms=0;
         if (app_state==APP_STATE_GAME && snake_state()==SNAKE_RUNNING) {
             running_elapsed_ms=(unsigned long)(now_ms-last_service_ms);
-            if (game_mode_advance(running_elapsed_ms)) {
-                snake_time_up();
-                redraw=1;
-                update_lcd=1;
-                led7seg_blank();
-                highscore_record_result(current_level,current_map,current_mode,
-                                        snake_get_score());
-                led7seg_resume();
-                result_saved=1;
-            } else if (bonus_food_advance(running_elapsed_ms))
-                redraw=1;
-            if (current_mode==MODE_TIME_ATTACK &&
-                shown_seconds!=game_mode_seconds_display()) {
-                shown_seconds=game_mode_seconds_display();
-                update_lcd=1;
-            }
         }
         last_service_ms=now_ms;
         key=keypad_get_event();
@@ -277,14 +253,12 @@ void main(void)
                 if (game_mode_menu_handle_key(key)) {
                     current_mode=game_mode_menu_selected();
                     if (game_mode_select(current_mode)) {
-                        game_mode_reset();
                         move_period_ms=game_get_move_period(current_level);
                         snake_set_level(current_level);
                         snake_init();
                         app_state=APP_STATE_GAME;
                         last_move_ms=now_ms;
                         last_service_ms=now_ms;
-                        shown_seconds=60u;
                         result_saved=0;
                         shown_score=0;
                         led7seg_set_number(0);
@@ -298,8 +272,7 @@ void main(void)
             }
         } else if (app_state==APP_STATE_GAME) {
             if (key==KEY_MENU &&
-                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN ||
-                 snake_state()==SNAKE_TIME_UP)) {
+                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN)) {
                 app_state=APP_STATE_LEVEL_SELECT;
                 game_menu_init(current_level);
                 shown_score=0;
@@ -311,8 +284,6 @@ void main(void)
                 snake_mix_entropy(now_ms);
                 snake_handle_key(key);
                 if (key==KEY_RESTART) {
-                    game_mode_reset();
-                    shown_seconds=60u;
                     result_saved=0;
                     last_service_ms=now_ms;
                     running_elapsed_ms=0;
@@ -338,8 +309,7 @@ void main(void)
                 update_lcd=1;
             }
             if (app_state==APP_STATE_GAME && !result_saved &&
-                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN ||
-                 snake_state()==SNAKE_TIME_UP)) {
+                (snake_state()==SNAKE_GAME_OVER || snake_state()==SNAKE_WIN)) {
                 led7seg_blank();
                 highscore_record_result(current_level,current_map,current_mode,
                                         snake_get_score());

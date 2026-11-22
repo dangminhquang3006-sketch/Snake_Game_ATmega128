@@ -75,7 +75,7 @@ int main(void)
     memcpy(v3_copy,hs_v3_a,61);
     highscore_init();
     assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==300);
-    assert(highscore_get(GAME_LEVEL_HARD,MAP_LABYRINTH,MODE_TIME_ATTACK)==560);
+    assert(highscore_get(GAME_LEVEL_HARD,MAP_LABYRINTH,MODE_STANDARD)==380);
     assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==0);
     assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,50)==HIGHSCORE_SAVED);
     assert(memcmp(v3_copy,hs_v3_a,61)==0);
@@ -91,7 +91,7 @@ int main(void)
     highscore_init();
     assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==0);
     assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==300);
-    for (i=0;i<36u;++i) {
+    for (i=0;i<18u;++i) {
         GameMode mode=(GameMode)(i/9u);
         GameLevel level=(GameLevel)((i%9u)/3u);
         MapId map=(MapId)(i%3u);
@@ -99,7 +99,7 @@ int main(void)
         assert(highscore_record_result(level,map,mode,value)==HIGHSCORE_SAVED);
     }
     highscore_init();
-    for (i=0;i<36u;++i)
+    for (i=0;i<18u;++i)
         assert(highscore_get((GameLevel)((i%9u)/3u),(MapId)(i%3u),
                              (GameMode)(i/9u))==(unsigned int)(600u+10u*i));
     assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,1110)==HIGHSCORE_SAVED);
@@ -109,6 +109,17 @@ int main(void)
     clear_eeprom();
     make_record(hs_v4_a,4,36,100);
     make_record(hs_v4_b,4,36,200);
+    highscore_init();
+    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==370u);
+    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,(GameMode)2)==0u);
+    assert(!game_mode_select((GameMode)2));
+    hs_v4_a[23]=(unsigned char)6000u;
+    hs_v4_a[24]=(unsigned char)(6000u>>8);
+    hs_v4_a[77]=crc(hs_v4_a,77);
+    highscore_init();
+    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==370u);
+    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,
+                                   (GameMode)2,100)==HIGHSCORE_SAVE_FAILED);
     hs_v4_a[3]=0xff; hs_v4_a[4]=0xff;
     hs_v4_a[77]=crc(hs_v4_a,77);
     hs_v4_b[3]=0; hs_v4_b[4]=0;
@@ -122,6 +133,6 @@ int main(void)
     hs_v4_a[77]^=1u;
     highscore_init();
     assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==200u);
-    puts("PASS: mode menu, EEPROM v1/v2/v3 to v4, CRC, 36 scores");
+    puts("PASS: mode menu, EEPROM v1/v2/v3 to v4, CRC, 18 scores");
     return 0;
 }

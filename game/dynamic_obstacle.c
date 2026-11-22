@@ -1,7 +1,6 @@
 #include "../config/board_config.h"
 #include "game_map.h"
 #include "game_mode.h"
-#include "bonus_food.h"
 #include "dynamic_obstacle.h"
 
 /* 8 row masks use 16 bytes; queue and visited are static to bound stack. */
@@ -128,10 +127,6 @@ static unsigned char cell_safe(unsigned char x,unsigned char y)
     if (next_x==(signed int)x && next_y==(signed int)y) return 0;
     food=snake_food();
     if (x==food.x && y==food.y) return 0;
-    if (bonus_food_active()) {
-        point=bonus_food_position();
-        if (x==point.x && y==point.y) return 0;
-    }
     for (i=0;i<snake_length();++i) {
         point=snake_segment(i);
         if (point.x==x && point.y==y) return 0;

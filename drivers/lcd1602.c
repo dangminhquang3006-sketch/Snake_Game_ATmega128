@@ -24,14 +24,10 @@ static flash char pillars_name[]="PILLARS";
 static flash char labyrinth_name[]="LABYRINTH";
 static flash char mode_prefix[]="MODE:";
 static flash char standard_name[]="STANDARD";
-static flash char bonus_name[]="BONUS";
-static flash char attack_name[]="TIME ATTACK";
 static flash char survival_name[]="SURVIVAL";
 static flash char survival_paused[]="SURVIVAL PAUSED";
 static flash char obst_playing[]="OBST:00 PLAYING";
 static flash char obst_paused[]="OBSTACLES: 00";
-static flash char time_prefix[]="TIME: 0";
-static flash char time_up_line[]="TIME UP!";
 
 static void spaces(void)
 {
@@ -123,9 +119,7 @@ void lcd1602_show_mode_menu(GameMode mode, unsigned int best)
 {
     spaces();
     copy_flash(0,mode_prefix);
-    if (mode==MODE_BONUS) copy_flash(5,bonus_name);
-    else if (mode==MODE_TIME_ATTACK) copy_flash(5,attack_name);
-    else if (mode==MODE_SURVIVAL) copy_flash(5,survival_name);
+    if (mode==MODE_SURVIVAL) copy_flash(5,survival_name);
     else copy_flash(5,standard_name);
     copy_flash(16,best_prefix);
     put_four_digits(22,best);
@@ -149,27 +143,6 @@ void lcd1602_show_result(unsigned char won, unsigned int score)
     spaces();
     if (won) copy_flash(0,win_line1);
     else copy_flash(0,over_line1);
-    copy_flash(16,score_prefix);
-    put_four_digits(23,score);
-}
-
-void lcd1602_show_time(unsigned char seconds, unsigned char paused)
-{
-    spaces();
-    if (seconds>60u) seconds=60u;
-    copy_flash(0,time_prefix);
-    desired[7]=(char)('0'+seconds/60u);
-    desired[8]=':';
-    desired[9]=(char)('0'+(seconds%60u)/10u);
-    desired[10]=(char)('0'+seconds%10u);
-    if (paused) copy_flash(16,paused_line2);
-    else copy_flash(16,playing_line2);
-}
-
-void lcd1602_show_time_up(unsigned int score)
-{
-    spaces();
-    copy_flash(0,time_up_line);
     copy_flash(16,score_prefix);
     put_four_digits(23,score);
 }
