@@ -83,3 +83,24 @@ Keypad có chống dội phím; giữ phím không tạo liên tiếp nhiều s�
 Mã nguồn hiện tại đã đạt **4 nhóm kiểm thử host**: logic rắn, rào chắn, EEPROM giả lập và LCD giả lập. Đã kiểm tra cả 6 tổ hợp và cú pháp toàn firmware qua bộ chuyển cú pháp dành cho host.
 
 Chưa Build All bằng CodeVisionAVR, chạy Proteus hoặc kiểm tra board thật cho phiên bản mới nhất. Kết quả host không thay thế kiểm tra trên MCU.
+
+## 10. Tài liệu giải thích chi tiết từng tính năng
+
+Các tài liệu dưới đây mô tả cách chương trình hiện tại thực hiện từng chức năng, gồm **ví dụ dễ hình dung** và **cách chương trình thực hiện** với các đoạn C, bảng dữ liệu và trường hợp đặc biệt.
+
+| Thứ tự đọc | Tính năng | Nội dung chính |
+|---:|---|---|
+| 1 | [Menu chọn Level và Map](MENU_CHON_LEVEL_VA_MAP.md) | Trạng thái ứng dụng, con trỏ lựa chọn, xác nhận và chuyển màn hình |
+| 2 | [Bản đồ và tường cố định](BAN_DO_VA_TUONG_CO_DINH.md) | Mặt nạ bit, ba bố cục map, kiểm tra vùng xuất phát và liên thông |
+| 3 | [Điều khiển keypad](DIEU_KHIEN_KEYPAD.md) | GPIO, quét ma trận, chống dội, nhấn/thả, sự kiện và hướng rẽ chờ |
+| 4 | [Di chuyển xuyên biên](DI_XUYEN_BIEN.md) | Bốn cạnh, tọa độ có dấu, va chạm tại nơi đến và quan hệ với vật cản/đảo đầu |
+| 5 | [Ăn mồi, cộng điểm và tăng chiều dài](AN_MOI_TANG_DIEM_VA_CHIEU_DAI.md) | Giữ đuôi, dịch mảng, tăng một đốt, tính điểm và tạo mồi mới |
+| 6 | [Đảo đầu–đuôi sau khi ăn](DAO_DAU_DUOI_KHI_AN_MOI.md) | Đảo thứ tự các đốt, suy hướng từ cổ mới, xử lý thân cong và xuyên biên |
+| 7 | [Sinh vật cản](SINH_VAT_CAN.md) | Thời gian RUNNING, chọn vị trí, vùng an toàn, BFS và ghi nhận thanh chắn |
+| 8 | [Tạm dừng và tiếp tục](TAM_DUNG_VA_TIEP_TUC.md) | Giữ dữ liệu ván, dừng tiến triển, hai mốc thời gian và hiển thị Pause |
+| 9 | [Chiến thắng — WIN](CHIEN_THANG_WIN.md) | Sức chứa theo map/vật cản, lần ăn cuối và xử lý kết quả |
+| 10 | [Chết — GAME OVER](CHET_VA_GAME_OVER.md) | Va chạm, quy tắc ô đuôi, dừng ván, kết quả, Restart và về menu |
+| 11 | [Lưu kỷ lục EEPROM](LUU_KY_LUC_EEPROM.md) | Sáu kỷ lục đang dùng, bố cục v4, CRC, sequence, hai slot và tương thích dữ liệu cũ |
+| 12 | [Hiển thị trên ba thiết bị](HIEN_THI_NOKIA_LCD_LED7DOAN.md) | Vẽ Nokia, quét LED 7 đoạn, cập nhật LCD từng ký tự và phối hợp trong vòng chính |
+
+“Chuyển màn hình” ở đây là đổi giữa menu Level, menu Map, màn chơi và kết quả. Bản hiện tại không tự chuyển sang map khác khi đạt một mốc điểm hoặc thắng ván.

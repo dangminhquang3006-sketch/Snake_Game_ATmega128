@@ -1,4 +1,4 @@
-VERSION:3 SOURCE_TIMESTAMP:5D7690F9
+VERSION:3 SOURCE_TIMESTAMP:5D769717
 NODE:I LEVEL:0 LINE:1 "C:\Users\Admin\Desktop\robot_new\Code_vison_32\inc\mega128.h"
 NODE:I LEVEL:0 LINE:2 "D:\nhung\Snake_Game_ATmega128\config\board_config.h"
 NODE:I LEVEL:0 LINE:3 "D:\nhung\Snake_Game_ATmega128\drivers\display.h"
@@ -16,8 +16,7 @@ NODE:I LEVEL:0 LINE:14 "D:\nhung\Snake_Game_ATmega128\storage\highscore_eeprom.h
 NODE:T LEVEL:0 LINE:47 "AppState"
 LEVEL:1 LINE:47 ICON:E "APP_STATE_LEVEL_SELECT=0"
 LEVEL:1 LINE:47 ICON:E "APP_STATE_MAP_SELECT=1"
-LEVEL:1 LINE:48 ICON:E "APP_STATE_MODE_SELECT=2"
-LEVEL:1 LINE:48 ICON:E "APP_STATE_GAME=3"
+LEVEL:1 LINE:48 ICON:E "APP_STATE_GAME=2"
 NODE:C LEVEL:0 LINE:49 "invalid_map_text_G006 -> FLASH"
-NODE:F LEVEL:0 LINE:51 "lcd_for_state(enum SnakeState state,enum GameLevel level,enum MapId map,enum GameMode mode)"
-NODE:F LEVEL:0 LINE:65 "main(void)"
+NODE:F LEVEL:0 LINE:51 "lcd_for_state(enum SnakeState state,enum GameLevel level,enum MapId map)"
+NODE:F LEVEL:0 LINE:62 "main(void)"
