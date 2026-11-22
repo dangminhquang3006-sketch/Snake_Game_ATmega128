@@ -12,8 +12,8 @@
 #define NOKIA_BL PORTD.7
 #define NOKIA_BL_DDR DDRD.7
 
-/* Initial PCD8544 VLCD setting; adjust after a hardware display test. */
-#define NOKIA_CONTRAST 0x40
+/* PCD8544 VLCD setting. Lower value reduces an overly dark display. */
+#define NOKIA_CONTRAST 0x3C
 
 /* Keypad: docs/so_do_chan_ban_phim.jpeg, column drive / row sense. */
 #define KEY_ROW1_DDR DDRC.6
