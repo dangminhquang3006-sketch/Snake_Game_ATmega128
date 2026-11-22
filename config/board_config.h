@@ -77,8 +77,9 @@
 #define CELL_SIZE 6
 #define GAME_MAX_SCORE ((GRID_COLS*GRID_ROWS-3u)*10u)
 /* Movement periods are selected by game_get_move_period(). */
+/* dieu chinh toc do chay cua con ran */
 #define GAME_EASY_MOVE_MS 500u
 #define GAME_NORMAL_MOVE_MS 300u
-#define GAME_HARD_MOVE_MS 150u
+#define GAME_HARD_MOVE_MS 250u
 
 #endif

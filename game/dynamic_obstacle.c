@@ -9,6 +9,8 @@ static unsigned int blocked_rows[GRID_ROWS];
 static unsigned char queue[GRID_COLS*GRID_ROWS];
 static unsigned int visited[GRID_ROWS];
 static unsigned char obstacle_count;
+/* One left endpoint per horizontal bar; collision uses all occupied cells. */
+static SnakePoint obstacle_starts[DYNAMIC_OBSTACLE_MAX_COUNT];
 static unsigned long elapsed_ms;
 
 void dynamic_obstacle_reset(void)
@@ -29,20 +31,17 @@ unsigned char dynamic_obstacle_get_count(void) { return obstacle_count; }
 
 unsigned char dynamic_obstacle_playable_cells(void)
 {
-    return (unsigned char)(game_map_get_free_cells()-obstacle_count);
+    unsigned char x,y,blocked=0;
+    for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
+        if (dynamic_obstacle_is_blocked(x,y)) ++blocked;
+    return (unsigned char)(game_map_get_free_cells()-blocked);
 }
 
 SnakePoint dynamic_obstacle_point(unsigned char index)
 {
-    unsigned char x,y,count=0;
     SnakePoint point={0,0};
     if (index>=obstacle_count) return point;
-    for (y=0;y<GRID_ROWS;++y) for (x=0;x<GRID_COLS;++x)
-        if (dynamic_obstacle_is_blocked(x,y)) {
-            if (count==index) { point.x=x; point.y=y; return point; }
-            ++count;
-        }
-    return point;
+    return obstacle_starts[index];
 }
 
 static unsigned char is_wall(unsigned char x,unsigned char y,
@@ -50,7 +49,8 @@ static unsigned char is_wall(unsigned char x,unsigned char y,
 {
     return (unsigned char)(game_map_is_blocked(x,y) ||
         dynamic_obstacle_is_blocked(x,y) ||
-        (x==candidate_x && y==candidate_y));
+        (y==candidate_y && x>=candidate_x &&
+         x<candidate_x+DYNAMIC_OBSTACLE_LENGTH));
 }
 
 static void visit(unsigned char x,unsigned char y,unsigned char *end)
@@ -107,7 +107,7 @@ static unsigned char remains_connected(unsigned char candidate_x,
         (visited[food.y]&(1u<<food.x))!=0u);
 }
 
-unsigned char dynamic_obstacle_candidate_valid(unsigned char x,unsigned char y)
+static unsigned char cell_safe(unsigned char x,unsigned char y)
 {
     unsigned char i,distance,dx,dy;
     SnakePoint head,point,food;
@@ -136,12 +136,23 @@ unsigned char dynamic_obstacle_candidate_valid(unsigned char x,unsigned char y)
         point=snake_segment(i);
         if (point.x==x && point.y==y) return 0;
     }
+    return 1;
+}
+
+/* Validate the entire bar together, including connectivity after all 3 cells
+   are blocked. Bars stay inside the display even on wrapping levels. */
+unsigned char dynamic_obstacle_candidate_valid(unsigned char x,unsigned char y)
+{
+    unsigned char j;
+    if (x>GRID_COLS-DYNAMIC_OBSTACLE_LENGTH || y>=GRID_ROWS) return 0;
+    for (j=0;j<DYNAMIC_OBSTACLE_LENGTH;++j)
+        if (!cell_safe((unsigned char)(x+j),y)) return 0;
     return remains_connected(x,y);
 }
 
 unsigned char dynamic_obstacle_update(unsigned long elapsed_running_ms)
 {
-    unsigned char offset,i,x,y;
+    unsigned char offset,i,x,y,j;
     if (game_mode_get_current()!=MODE_SURVIVAL ||
         snake_state()!=SNAKE_RUNNING ||
         obstacle_count>=DYNAMIC_OBSTACLE_MAX_COUNT) return 0;
@@ -159,7 +170,10 @@ unsigned char dynamic_obstacle_update(unsigned long elapsed_running_ms)
         x=(unsigned char)(cell%GRID_COLS);
         y=(unsigned char)(cell/GRID_COLS);
         if (dynamic_obstacle_candidate_valid(x,y)) {
-            blocked_rows[y]|=(unsigned int)(1u<<x);
+            for (j=0;j<DYNAMIC_OBSTACLE_LENGTH;++j)
+                blocked_rows[y]|=(unsigned int)(1u<<(x+j));
+            obstacle_starts[obstacle_count].x=x;
+            obstacle_starts[obstacle_count].y=y;
             ++obstacle_count;
             return 1;
         }

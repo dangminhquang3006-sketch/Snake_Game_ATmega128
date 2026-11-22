@@ -91,3 +91,10 @@ sh tests/run_host_validation.sh
 Test host dùng mock để kiểm tra thuật toán; nó không tạo HEX và không thay thế Build All hoặc Proteus. [Báo cáo kiểm định mở rộng](docs/final_extended_validation_report.md) ghi ma trận 36 tổ hợp, kết quả đã kiểm tra và các mục còn cần xác minh trên CVAVR, Proteus và board thực.
 
 Trước khi nạp board, kiểm tra nguồn, clock, mức điện áp Nokia, kết nối ISP và fuse. Sao lưu EEPROM; kiểm tra file `.eep`, chip erase và EESAVE để không ghi đè kỷ lục cũ.
+
+### Chướng ngại vật Survival
+
+- Mỗi chướng ngại vật là một thanh ngang đặc dài 3 ô (18 × 6 pixel).
+- Mỗi 10 giây chơi thử thêm 1 thanh, tối đa 8 thanh; LCD đếm số thanh.
+- Áp dụng cho Classic, Pillars và Labyrinth ở cả 3 độ khó. Cả thanh phải nằm trong màn hình, tránh tường, rắn, thức ăn và vùng cách đầu rắn tối đa 2 bước.
+- Chỉ đặt nếu các ô trống còn thông nhau theo luật xuyên biên của độ khó. Không tìm được vị trí hợp lệ thì bỏ qua lần sinh đó.

@@ -466,24 +466,24 @@ int main(void)
     assert(game_map_select(MAP_PILLARS));
     snake_init();
     assert(dynamic_obstacle_update(20000UL));
-    assert(dynamic_obstacle_playable_cells()==103u);
+    assert(dynamic_obstacle_playable_cells()==101u);
     assert(game_map_select(MAP_LABYRINTH));
     snake_init();
     assert(dynamic_obstacle_update(20000UL));
-    assert(dynamic_obstacle_playable_cells()==99u);
+    assert(dynamic_obstacle_playable_cells()==97u);
     assert(game_map_select(MAP_CLASSIC));
     snake_init();
     assert(dynamic_obstacle_get_count()==0u);
     assert(!dynamic_obstacle_candidate_valid(7,4));
     assert(!dynamic_obstacle_candidate_valid(food.x,food.y));
-    assert(!dynamic_obstacle_update(19999UL));
+    assert(!dynamic_obstacle_update(DYNAMIC_OBSTACLE_INTERVAL_MS-1UL));
     assert(dynamic_obstacle_get_count()==0u);
     assert(dynamic_obstacle_update(1UL));
     assert(dynamic_obstacle_get_count()==1u);
     head=dynamic_obstacle_point(0);
     assert(dynamic_obstacle_is_blocked(head.x,head.y));
     assert(!(head.x==food.x && head.y==food.y));
-    assert(dynamic_obstacle_playable_cells()==111u);
+    assert(dynamic_obstacle_playable_cells()==109u);
     for (i=0;i<40u;++i) { place_food(); check_food();
         assert(!dynamic_obstacle_is_blocked(food.x,food.y)); }
     snake_handle_key(KEY_PAUSE);
@@ -494,7 +494,7 @@ int main(void)
     assert(dynamic_obstacle_get_count()==DYNAMIC_OBSTACLE_MAX_COUNT);
     assert(!dynamic_obstacle_update(20000UL));
     assert(dynamic_obstacle_playable_cells()==
-           (unsigned char)(112u-dynamic_obstacle_get_count()));
+           (unsigned char)(112u-DYNAMIC_OBSTACLE_LENGTH*dynamic_obstacle_get_count()));
     head=dynamic_obstacle_point(0);
     food.x=13; food.y=7;
     current_length=3;
