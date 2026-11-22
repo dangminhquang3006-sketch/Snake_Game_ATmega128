@@ -53,11 +53,11 @@ Trong HARD, rắn cũng tăng chiều dài và điểm như trên, sau đó còn
 
 ## 2. Cách chương trình thực hiện
 
-Phần xử lý chính nằm trong [game/game.c](game/game.c), nhất là `snake_step()` và `place_food()`. [main.c](main.c) quyết định khi nào rắn di chuyển và cập nhật điểm lên LED 7 đoạn. Các khối C dưới đây được trích từ source hiện tại.
+Phần xử lý chính nằm trong [game/game.c](../../game/game.c), nhất là `snake_step()` và `place_food()`. [main.c](../../main.c) quyết định khi nào rắn di chuyển và cập nhật điểm lên LED 7 đoạn. Các khối C dưới đây được trích từ source hiện tại.
 
 ### 2.1. Lưu tọa độ, chiều dài, mồi và điểm
 
-Một đốt rắn được biểu diễn bằng cấu trúc trong [game/snake_game.h](game/snake_game.h):
+Một đốt rắn được biểu diễn bằng cấu trúc trong [game/snake_game.h](../../game/snake_game.h):
 
 ```c
 typedef struct {

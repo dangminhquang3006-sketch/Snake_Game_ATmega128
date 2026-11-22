@@ -30,7 +30,7 @@ Map được người chơi chọn trước ván và giữ nguyên đến khi ch
 
 ## 2. Cách chương trình thực hiện
 
-Dữ liệu và kiểm tra map nằm trong [game/game.c](game/game.c); các ID và API nằm trong [game/game_map.h](game/game_map.h).
+Dữ liệu và kiểm tra map nằm trong [game/game.c](../../game/game.c); các ID và API nằm trong [game/game_map.h](../../game/game_map.h).
 
 ### 2.1. Gán ID và lưu 8 hàng của từng map
 

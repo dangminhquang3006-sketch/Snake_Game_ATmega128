@@ -20,7 +20,7 @@ Nokia hiện `YOU WIN`, điểm và hướng dẫn `9:RESTART`, `1:MENU`. Nhấn
 
 ## 2. Cách chương trình thực hiện
 
-Phát hiện WIN nằm trong `snake_step()` và `place_food()` của [game/game.c](game/game.c). [main.c](main.c) tiếp nhận kết quả, dừng cập nhật gameplay và chuẩn bị hiển thị/lưu kỷ lục.
+Phát hiện WIN nằm trong `snake_step()` và `place_food()` của [game/game.c](../../game/game.c). [main.c](../../main.c) tiếp nhận kết quả, dừng cập nhật gameplay và chuẩn bị hiển thị/lưu kỷ lục.
 
 ### 2.1. Một trạng thái kết thúc riêng
 

@@ -24,7 +24,7 @@ Menu Level ──5──> Menu Map ──5, map hợp lệ──> Chơi
 
 ## 2. Cách chương trình thực hiện
 
-Menu được triển khai trong [game/game.c](game/game.c); [main.c](main.c) giữ trạng thái màn hình và thực hiện việc bắt đầu ván. Bản đồ được giải thích riêng trong [BAN_DO_VA_TUONG_CO_DINH.md](BAN_DO_VA_TUONG_CO_DINH.md).
+Menu được triển khai trong [game/game.c](../../game/game.c); [main.c](../../main.c) giữ trạng thái màn hình và thực hiện việc bắt đầu ván. Bản đồ được giải thích riêng trong [BAN_DO_VA_TUONG_CO_DINH.md](BAN_DO_VA_TUONG_CO_DINH.md).
 
 ### 2.1. Tách trạng thái ứng dụng khỏi trạng thái rắn
 

@@ -24,7 +24,7 @@ RUNNING ──5──> PAUSED ──5──> RUNNING
 
 ## 2. Cách chương trình thực hiện
 
-Nhánh đổi trạng thái nằm trong [game/game.c](game/game.c); các mốc thời gian và yêu cầu hiển thị được xử lý trong [main.c](main.c).
+Nhánh đổi trạng thái nằm trong [game/game.c](../../game/game.c); các mốc thời gian và yêu cầu hiển thị được xử lý trong [main.c](../../main.c).
 
 ### 2.1. Một trạng thái riêng cho Pause
 

@@ -59,11 +59,11 @@ Rắn không có số mạng hay thanh máu. Một lần va chạm bị xác đ�
 
 ## 2. Cách chương trình thực hiện
 
-Logic phát hiện chết nằm trong [game/game.c](game/game.c). [main.c](main.c) điều phối việc dừng gameplay, xử lý kết quả, cập nhật màn hình và nhận phím sau khi kết thúc. Các khối C dưới đây được trích từ source hiện tại.
+Logic phát hiện chết nằm trong [game/game.c](../../game/game.c). [main.c](../../main.c) điều phối việc dừng gameplay, xử lý kết quả, cập nhật màn hình và nhận phím sau khi kết thúc. Các khối C dưới đây được trích từ source hiện tại.
 
 ### 2.1. Biểu diễn trạng thái sống, tạm dừng, chết và thắng
 
-Trong [game/snake_game.h](game/snake_game.h), trạng thái rắn được khai báo:
+Trong [game/snake_game.h](../../game/snake_game.h), trạng thái rắn được khai báo:
 
 ```c
 typedef enum {
@@ -497,7 +497,7 @@ if (app_state==APP_STATE_GAME && !result_saved &&
 
 Chương trình gọi `highscore_record_result()` với Level, Map, nhóm kỷ lục đang dùng và điểm cuối ván. Nhóm `MODE_SURVIVAL` ở đây là nhóm lưu trữ kế thừa cho luật có vật cản, không phải một màn chọn chế độ riêng.
 
-Bộ lưu trữ trong [storage/highscore_eeprom.c](storage/highscore_eeprom.c) chỉ ghi EEPROM khi điểm hợp lệ và cao hơn kỷ lục hiện có. Nó có thể trả về:
+Bộ lưu trữ trong [storage/highscore_eeprom.c](../../storage/highscore_eeprom.c) chỉ ghi EEPROM khi điểm hợp lệ và cao hơn kỷ lục hiện có. Nó có thể trả về:
 
 | Kết quả | Ý nghĩa |
 |---|---|

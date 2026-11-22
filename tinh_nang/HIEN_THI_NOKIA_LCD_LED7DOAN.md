@@ -23,7 +23,7 @@ Ba thiết bị chia sẻ cùng dữ liệu ván nhưng dùng cách cập nhật
 
 ## 2. Cách chương trình thực hiện
 
-Các driver là [drivers/display.c](drivers/display.c), [drivers/lcd1602.c](drivers/lcd1602.c), [drivers/led7seg.c](drivers/led7seg.c). [game/game.c](game/game.c) chuẩn bị hình vẽ, còn [main.c](main.c) gọi phục vụ theo trạng thái và đồng hồ.
+Các driver là [drivers/display.c](../../drivers/display.c), [drivers/lcd1602.c](../../drivers/lcd1602.c), [drivers/led7seg.c](../../drivers/led7seg.c). [game/game.c](../../game/game.c) chuẩn bị hình vẽ, còn [main.c](../../main.c) gọi phục vụ theo trạng thái và đồng hồ.
 
 ### 2.1. Phân chia trách nhiệm
 
@@ -52,7 +52,7 @@ LED dùng nhiều bit rải trên PORTA, PORTD, PORTF:
 | Segment D, E, F, G | PD1, PD2, PF2, PD3 |
 | DP | PF7, được giữ tắt |
 
-Các mask trong [config/board_config.h](config/board_config.h) mô tả đúng các bit này. Mức cấu hình hiện tại là chọn digit bằng 1 và bật segment bằng 0 cho LED common-anode trực tiếp.
+Các mask trong [config/board_config.h](../../config/board_config.h) mô tả đúng các bit này. Mức cấu hình hiện tại là chọn digit bằng 1 và bật segment bằng 0 cho LED common-anode trực tiếp.
 
 ### 2.3. Khởi tạo Nokia và font
 

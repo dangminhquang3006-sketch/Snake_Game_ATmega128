@@ -28,7 +28,7 @@ Các thời điểm là ví dụ theo đồng hồ MCU, giả sử vòng lặp �
 
 ## 2. Cách chương trình thực hiện
 
-Quét phần cứng và chống dội nằm trong [drivers/keypad.c](drivers/keypad.c); tên sự kiện ở [drivers/keypad.h](drivers/keypad.h). [main.c](main.c) lấy sự kiện, còn [game/game.c](game/game.c) quyết định có nhận hướng rẽ hay không.
+Quét phần cứng và chống dội nằm trong [drivers/keypad.c](../../drivers/keypad.c); tên sự kiện ở [drivers/keypad.h](../../drivers/keypad.h). [main.c](../../main.c) lấy sự kiện, còn [game/game.c](../../game/game.c) quyết định có nhận hướng rẽ hay không.
 
 ### 2.1. Phân biệt vị trí phím và sự kiện chức năng
 
@@ -40,7 +40,7 @@ Hai vị trí 3 và 7 không gán chức năng trong game hiện tại. Chúng v
 
 ### 2.2. Các chân hàng và cột
 
-Theo [config/board_config.h](config/board_config.h):
+Theo [config/board_config.h](../../config/board_config.h):
 
 | Đường keypad | Chân ATmega128 | Cấu hình |
 |---|---|---|

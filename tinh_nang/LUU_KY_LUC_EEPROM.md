@@ -24,7 +24,7 @@ Nhấn 9 chơi lại chỉ reset điểm của ván, không xóa kỷ lục EEPR
 
 ## 2. Cách chương trình thực hiện
 
-Phần lưu trữ nằm trong [storage/highscore_eeprom.c](storage/highscore_eeprom.c), API ở [storage/highscore_eeprom.h](storage/highscore_eeprom.h). [main.c](main.c) gọi đọc lúc khởi động và xử lý kết quả lúc ván kết thúc.
+Phần lưu trữ nằm trong [storage/highscore_eeprom.c](../../storage/highscore_eeprom.c), API ở [storage/highscore_eeprom.h](../../storage/highscore_eeprom.h). [main.c](../../main.c) gọi đọc lúc khởi động và xử lý kết quả lúc ván kết thúc.
 
 ### 2.1. Phân biệt điểm ván, bản sao RAM và bản ghi EEPROM
 

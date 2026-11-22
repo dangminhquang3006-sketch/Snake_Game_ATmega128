@@ -27,7 +27,7 @@ Các ô thân rắn không dịch chuyển thêm trong lúc đảo. Chương tr�
 
 ## 2. Cách chương trình thực hiện
 
-Phần dưới bám theo mã nguồn hiện tại trong [game/game.c](game/game.c), [main.c](main.c) và [game/snake_game.h](game/snake_game.h). Các khối C trích từ chương trình; các bảng tọa độ là ví dụ để theo dõi dữ liệu.
+Phần dưới bám theo mã nguồn hiện tại trong [game/game.c](../../game/game.c), [main.c](../../main.c) và [game/snake_game.h](../../game/snake_game.h). Các khối C trích từ chương trình; các bảng tọa độ là ví dụ để theo dõi dữ liệu.
 
 ### 2.1. Chương trình lưu con rắn như thế nào?
 

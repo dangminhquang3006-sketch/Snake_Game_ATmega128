@@ -57,4 +57,4 @@ Bản rút gọn chưa cập nhật các thay đổi chế độ chơi này. L�
 
 ## Tài liệu giải thích tính năng
 
-Xem [danh mục 12 tài liệu tính năng](TINH_NANG.md#10-tài-liệu-giải-thích-chi-tiết-từng-tính-năng). Mỗi file có ví dụ minh họa và giải thích chi tiết cách chương trình thực hiện; gồm menu, map, keypad, xuyên biên, ăn mồi, đảo đầu–đuôi, vật cản, Pause/Resume, WIN/GAME OVER, EEPROM và hiển thị.
+Xem [danh mục 12 tài liệu tính năng](docs/tinh_nang/TINH_NANG.md#10-tài-liệu-giải-thích-chi-tiết-từng-tính-năng). Mỗi file có ví dụ minh họa và giải thích chi tiết cách chương trình thực hiện; gồm menu, map, keypad, xuyên biên, ăn mồi, đảo đầu–đuôi, vật cản, Pause/Resume, WIN/GAME OVER, EEPROM và hiển thị.

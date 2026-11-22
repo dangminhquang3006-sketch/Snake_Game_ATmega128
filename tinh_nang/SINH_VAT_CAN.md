@@ -41,19 +41,19 @@ Thời gian tạm dừng không được cộng vào chu kỳ. Ví dụ, đã ch
 
 ## 2. Cách chương trình thực hiện
 
-Phần xử lý nằm trong [game/game.c](game/game.c), nhóm hàm `dynamic_obstacle`. Vòng lặp trong [main.c](main.c) truyền thời gian và cập nhật màn hình; [drivers/timer.c](drivers/timer.c) cung cấp đồng hồ mili giây. Các đoạn C dưới đây trích từ mã nguồn hiện tại.
+Phần xử lý nằm trong [game/game.c](../../game/game.c), nhóm hàm `dynamic_obstacle`. Vòng lặp trong [main.c](../../main.c) truyền thời gian và cập nhật màn hình; [drivers/timer.c](../../drivers/timer.c) cung cấp đồng hồ mili giây. Các đoạn C dưới đây trích từ mã nguồn hiện tại.
 
 ### 2.1. Các thông số và quy ước tọa độ
 
 Lưới chơi có 14 cột × 8 hàng, tức 112 ô. Cột `x` chạy từ 0 đến 13; hàng `y` chạy từ 0 đến 7. `y` tăng từ trên xuống dưới.
 
-Chu kỳ trong [config/board_config.h](config/board_config.h):
+Chu kỳ trong [config/board_config.h](../../config/board_config.h):
 
 ```c
 #define DYNAMIC_OBSTACLE_INTERVAL_MS 10000UL
 ```
 
-Giới hạn trong [game/game_mode.h](game/game_mode.h):
+Giới hạn trong [game/game_mode.h](../../game/game_mode.h):
 
 ```c
 #define DYNAMIC_OBSTACLE_MAX_COUNT 8u
