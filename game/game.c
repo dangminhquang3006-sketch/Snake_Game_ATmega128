@@ -1,4 +1,4 @@
-/* Gameplay implementation: mode, map, snake, survival, menus and rendering.
+/* Gameplay implementation: map, snake, obstacles, menus and rendering.
    Compile this file once; public interfaces remain in the matching headers. */
 #include "../config/board_config.h"
 #include "../drivers/display.h"
@@ -8,19 +8,6 @@
 #include "dynamic_obstacle.h"
 #include "game_menu.h"
 #include "game_render.h"
-
-/* ---------- game_mode ---------- */
-
-static GameMode current_mode=MODE_STANDARD;
-
-unsigned char game_mode_select(GameMode mode)
-{
-    if ((unsigned int)mode>=MODE_COUNT) return 0;
-    current_mode=mode;
-    return 1;
-}
-
-GameMode game_mode_get_current(void) { return current_mode; }
 
 /* ---------- game_map ---------- */
 
@@ -118,7 +105,7 @@ static SnakeDirection direction;
 static SnakeDirection next_direction;
 static unsigned char turn_queued;
 static SnakeState state;
-static GameLevel current_level=GAME_LEVEL_EASY;
+static GameLevel current_level=GAME_LEVEL_NORMAL;
 /* A nonzero 16-bit Galois LFSR state. It is pseudo-random, not true entropy. */
 static unsigned int rng_state=0xACE1u;
 
@@ -153,7 +140,7 @@ unsigned char snake_random_index(unsigned char count)
 
 void snake_set_level(GameLevel level)
 {
-    if ((unsigned int)level>=3u) level=GAME_LEVEL_EASY;
+    if (level!=GAME_LEVEL_NORMAL && level!=GAME_LEVEL_HARD) level=GAME_LEVEL_NORMAL;
     current_level=level;
 }
 
@@ -506,8 +493,7 @@ static unsigned char cell_safe(unsigned char x,unsigned char y)
     unsigned char i,distance,dx,dy;
     SnakePoint head,point,food;
     signed int next_x,next_y;
-    if (game_mode_get_current()!=MODE_SURVIVAL ||
-        x>=GRID_COLS || y>=GRID_ROWS ||
+    if (x>=GRID_COLS || y>=GRID_ROWS ||
         game_map_is_blocked(x,y) || dynamic_obstacle_is_blocked(x,y)) return 0;
     head=snake_segment(0);
     dx=(unsigned char)((x>head.x)?(x-head.x):(head.x-x));
@@ -543,8 +529,7 @@ unsigned char dynamic_obstacle_candidate_valid(unsigned char x,unsigned char y)
 unsigned char dynamic_obstacle_update(unsigned long elapsed_running_ms)
 {
     unsigned char offset,i,x,y,j;
-    if (game_mode_get_current()!=MODE_SURVIVAL ||
-        snake_state()!=SNAKE_RUNNING ||
+    if (snake_state()!=SNAKE_RUNNING ||
         obstacle_count>=DYNAMIC_OBSTACLE_MAX_COUNT) return 0;
     if (elapsed_running_ms>=DYNAMIC_OBSTACLE_INTERVAL_MS)
         elapsed_ms=DYNAMIC_OBSTACLE_INTERVAL_MS;
@@ -573,19 +558,15 @@ unsigned char dynamic_obstacle_update(unsigned long elapsed_running_ms)
 
 /* ---------- game_menu ---------- */
 
-static GameLevel selected_level=GAME_LEVEL_EASY;
+static GameLevel selected_level=GAME_LEVEL_NORMAL;
 static MapId selected_map=MAP_CLASSIC;
-static GameMode selected_mode=MODE_STANDARD;
 static flash char title_text[]="SNAKE GAME";
-static flash char easy_selected[] ="> EASY";
-static flash char easy_plain[]    ="  EASY";
 static flash char normal_selected[]="> NORMAL";
 static flash char normal_plain[]   ="  NORMAL";
 static flash char hard_selected[]  ="> HARD";
 static flash char hard_plain[]     ="  HARD";
 static flash char help_text[]="2/8:MOVE 5:OK";
 static flash char map_title[]="SELECT MAP";
-static flash char level_easy[]="LEVEL: EASY";
 static flash char level_normal[]="LEVEL: NORMAL";
 static flash char level_hard[]="LEVEL: HARD";
 static flash char classic_selected[]="> CLASSIC";
@@ -594,25 +575,20 @@ static flash char pillars_selected[]="> PILLARS";
 static flash char pillars_plain[]="  PILLARS";
 static flash char labyrinth_selected[]="> LABYRINTH";
 static flash char labyrinth_plain[]="  LABYRINTH";
-static flash char mode_title[]="SELECT MODE";
-static flash char standard_selected[]="> STANDARD";
-static flash char standard_plain[]="  STANDARD";
-static flash char survival_selected[]="> SURVIVAL";
-static flash char survival_plain[]="  SURVIVAL";
 
 void game_menu_init(GameLevel selected)
 {
-    if ((unsigned int)selected>=3u) selected=GAME_LEVEL_EASY;
+    if (selected!=GAME_LEVEL_NORMAL && selected!=GAME_LEVEL_HARD) selected=GAME_LEVEL_NORMAL;
     selected_level=selected;
 }
 
 unsigned char game_menu_handle_key(KeyEvent key)
 {
     if (key==KEY_UP) {
-        if (selected_level==GAME_LEVEL_EASY) selected_level=GAME_LEVEL_HARD;
+        if (selected_level==GAME_LEVEL_NORMAL) selected_level=GAME_LEVEL_HARD;
         else selected_level=(GameLevel)(selected_level-1);
     } else if (key==KEY_DOWN) {
-        if (selected_level==GAME_LEVEL_HARD) selected_level=GAME_LEVEL_EASY;
+        if (selected_level==GAME_LEVEL_HARD) selected_level=GAME_LEVEL_NORMAL;
         else selected_level=(GameLevel)(selected_level+1);
     } else if (key==KEY_PAUSE) return 1;
     return 0;
@@ -625,19 +601,16 @@ GameLevel game_menu_selected(void)
 
 unsigned int game_get_move_period(GameLevel level)
 {
-    if (level==GAME_LEVEL_NORMAL) return GAME_NORMAL_MOVE_MS;
     if (level==GAME_LEVEL_HARD) return GAME_HARD_MOVE_MS;
-    return GAME_EASY_MOVE_MS;
+    return GAME_NORMAL_MOVE_MS;
 }
 
 void game_menu_render(void)
 {
     display_clear();
     display_text(0,0,title_text);
-    if (selected_level==GAME_LEVEL_EASY) display_text(0,10,easy_selected);
-    else display_text(0,10,easy_plain);
-    if (selected_level==GAME_LEVEL_NORMAL) display_text(0,18,normal_selected);
-    else display_text(0,18,normal_plain);
+    if (selected_level==GAME_LEVEL_NORMAL) display_text(0,14,normal_selected);
+    else display_text(0,14,normal_plain);
     if (selected_level==GAME_LEVEL_HARD) display_text(0,26,hard_selected);
     else display_text(0,26,hard_plain);
     display_text(0,40,help_text);
@@ -667,45 +640,14 @@ void game_map_menu_render(GameLevel level)
 {
     display_clear();
     display_text(0,0,map_title);
-    if (level==GAME_LEVEL_NORMAL) display_text(0,8,level_normal);
-    else if (level==GAME_LEVEL_HARD) display_text(0,8,level_hard);
-    else display_text(0,8,level_easy);
+    if (level==GAME_LEVEL_HARD) display_text(0,8,level_hard);
+    else display_text(0,8,level_normal);
     if (selected_map==MAP_CLASSIC) display_text(0,17,classic_selected);
     else display_text(0,17,classic_plain);
     if (selected_map==MAP_PILLARS) display_text(0,26,pillars_selected);
     else display_text(0,26,pillars_plain);
     if (selected_map==MAP_LABYRINTH) display_text(0,35,labyrinth_selected);
     else display_text(0,35,labyrinth_plain);
-}
-
-void game_mode_menu_init(GameMode selected)
-{
-    if ((unsigned int)selected>=MODE_COUNT) selected=MODE_STANDARD;
-    selected_mode=selected;
-}
-
-unsigned char game_mode_menu_handle_key(KeyEvent key)
-{
-    if (key==KEY_UP) {
-        if (selected_mode==MODE_STANDARD) selected_mode=MODE_SURVIVAL;
-        else selected_mode=(GameMode)(selected_mode-1);
-    } else if (key==KEY_DOWN) {
-        if (selected_mode==MODE_SURVIVAL) selected_mode=MODE_STANDARD;
-        else selected_mode=(GameMode)(selected_mode+1);
-    } else if (key==KEY_PAUSE) return 1;
-    return 0;
-}
-
-GameMode game_mode_menu_selected(void) { return selected_mode; }
-
-void game_mode_menu_render(void)
-{
-    display_clear();
-    display_text(0,0,mode_title);
-    if (selected_mode==MODE_STANDARD) display_text(0,8,standard_selected);
-    else display_text(0,8,standard_plain);
-    if (selected_mode==MODE_SURVIVAL) display_text(0,20,survival_selected);
-    else display_text(0,20,survival_plain);
 }
 
 /* ---------- game_render ---------- */

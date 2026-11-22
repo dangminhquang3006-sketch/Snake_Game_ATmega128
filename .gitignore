@@ -17,3 +17,5 @@ Output/
 
 # VS Code local settings
 .vscode/
+tools/
+tests/

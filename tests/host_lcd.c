@@ -33,37 +33,35 @@ static void finish_update(void)
 int main(void)
 {
     lcd1602_init();
-    lcd1602_show_menu(GAME_LEVEL_EASY,120); finish_update();
+    lcd1602_show_menu(GAME_LEVEL_NORMAL,120); finish_update();
     assert(memcmp(screen[0],"SELECT LEVEL    ",16)==0);
-    assert(memcmp(screen[1],"EASY BEST:0120  ",16)==0);
+    assert(memcmp(screen[1],"NORMAL BEST:0120",16)==0);
     lcd1602_show_menu(GAME_LEVEL_NORMAL,80); finish_update();
     assert(memcmp(screen[1],"NORMAL BEST:0080",16)==0);
     lcd1602_show_map_menu(MAP_PILLARS,120); finish_update();
     assert(memcmp(screen[0],"MAP: PILLARS    ",16)==0);
     assert(memcmp(screen[1],"BEST: 0120      ",16)==0);
-    lcd1602_show_mode_menu(MODE_STANDARD,90); finish_update();
-    assert(memcmp(screen[0],"MODE:STANDARD   ",16)==0);
-    assert(memcmp(screen[1],"BEST: 0090      ",16)==0);
     lcd1602_show_playing(GAME_LEVEL_HARD,MAP_LABYRINTH); finish_update();
     assert(memcmp(screen[0],"HARD LABYRINTH  ",16)==0);
     assert(memcmp(screen[1],"STATUS: PLAYING ",16)==0);
     lcd1602_show_paused(GAME_LEVEL_NORMAL,MAP_PILLARS); finish_update();
     assert(memcmp(screen[0],"NORMAL PILLARS  ",16)==0);
     assert(memcmp(screen[1],"GAME PAUSED     ",16)==0);
-    lcd1602_show_mode_menu(MODE_SURVIVAL,70); finish_update();
-    assert(memcmp(screen[0],"MODE:SURVIVAL   ",16)==0);
-    lcd1602_show_survival(GAME_LEVEL_HARD,3,0); finish_update();
-    assert(memcmp(screen[0],"SURVIVAL HARD   ",16)==0);
+    lcd1602_show_obstacles(GAME_LEVEL_NORMAL,MAP_CLASSIC,1,0); finish_update();
+    assert(memcmp(screen[0],"NORMAL CLASSIC  ",16)==0);
+    assert(memcmp(screen[1],"OBST:01 PLAYING ",16)==0);
+    lcd1602_show_obstacles(GAME_LEVEL_HARD,MAP_PILLARS,3,0); finish_update();
+    assert(memcmp(screen[0],"HARD PILLARS    ",16)==0);
     assert(memcmp(screen[1],"OBST:03 PLAYING ",16)==0);
-    lcd1602_show_survival(GAME_LEVEL_HARD,3,1); finish_update();
-    assert(memcmp(screen[0],"SURVIVAL PAUSED ",16)==0);
-    assert(memcmp(screen[1],"OBSTACLES: 03   ",16)==0);
+    lcd1602_show_obstacles(GAME_LEVEL_HARD,MAP_PILLARS,3,1); finish_update();
+    assert(memcmp(screen[0],"HARD PILLARS    ",16)==0);
+    assert(memcmp(screen[1],"OBST:03 PAUSED  ",16)==0);
     lcd1602_show_result(0,50); finish_update();
     assert(memcmp(screen[0],"GAME OVER       ",16)==0);
     assert(memcmp(screen[1],"SCORE: 0050     ",16)==0);
     lcd1602_show_result(1,1090); finish_update();
     assert(memcmp(screen[0],"YOU WIN!        ",16)==0);
     assert(memcmp(screen[1],"SCORE: 1090     ",16)==0);
-    puts("PASS: LCD two modes, survival count, pause and results");
+    puts("PASS: LCD level/map, obstacle count, pause and results");
     return 0;
 }

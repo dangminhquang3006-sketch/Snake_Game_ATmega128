@@ -139,7 +139,7 @@ void highscore_init(void)
 
 unsigned int highscore_get(GameLevel level,MapId map,GameMode mode)
 {
-    if ((unsigned int)level>=3u || (unsigned int)map>=MAP_COUNT ||
+    if ((level!=GAME_LEVEL_NORMAL && level!=GAME_LEVEL_HARD) || (unsigned int)map>=MAP_COUNT ||
         (unsigned int)mode>=MODE_COUNT) return 0;
     return best_scores[(unsigned char)((mode==MODE_SURVIVAL ? 27u : 0u)+
         (unsigned char)level*3u+(unsigned char)map)];
@@ -151,7 +151,7 @@ HighscoreSaveResult highscore_record_result(GameLevel level,MapId map,
 {
     unsigned char data[78],slot,i,crc=0,index;
     unsigned int next_seq,verify[36],verify_seq,old_score,limit;
-    if ((unsigned int)level>=3u || (unsigned int)map>=MAP_COUNT ||
+    if ((level!=GAME_LEVEL_NORMAL && level!=GAME_LEVEL_HARD) || (unsigned int)map>=MAP_COUNT ||
         (unsigned int)mode>=MODE_COUNT)
         return HIGHSCORE_SAVE_FAILED;
     limit=score_limit_v4(map,(unsigned char)(mode==MODE_SURVIVAL ? 3u : 0u));

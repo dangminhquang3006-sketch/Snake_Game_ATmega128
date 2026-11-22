@@ -6,8 +6,8 @@
 #include "game_mode.h"
 
 typedef enum {
-    GAME_LEVEL_EASY=0,
-    GAME_LEVEL_NORMAL,
+    /* Preserve stored level IDs for existing EEPROM high scores. */
+    GAME_LEVEL_NORMAL=1,
     GAME_LEVEL_HARD
 } GameLevel;
 
@@ -20,9 +20,5 @@ void game_map_menu_init(MapId selected);
 unsigned char game_map_menu_handle_key(KeyEvent key);
 MapId game_map_menu_selected(void);
 void game_map_menu_render(GameLevel level);
-void game_mode_menu_init(GameMode selected);
-unsigned char game_mode_menu_handle_key(KeyEvent key);
-GameMode game_mode_menu_selected(void);
-void game_mode_menu_render(void);
 
 #endif

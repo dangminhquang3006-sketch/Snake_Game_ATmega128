@@ -52,18 +52,14 @@ int main(void)
     unsigned char i,v3_copy[61];
     clear_eeprom();
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==0);
-    game_mode_menu_init(MODE_STANDARD);
-    game_mode_menu_handle_key(KEY_UP);
-    assert(game_mode_menu_selected()==MODE_SURVIVAL);
-    game_mode_menu_handle_key(KEY_DOWN);
-    assert(game_mode_menu_selected()==MODE_STANDARD);
-    game_mode_menu_render();
-
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==0);
+    assert(highscore_get((GameLevel)0,MAP_CLASSIC,MODE_STANDARD)==0);
+    assert(highscore_record_result((GameLevel)0,MAP_CLASSIC,MODE_STANDARD,100)
+           ==HIGHSCORE_SAVE_FAILED);
     make_record(hs_slot_a,1,3,100);
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==100);
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==0);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==110);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==0);
     assert(hs_v4_a[78]==0xff);
     make_record(hs_v2_a,2,9,200);
     highscore_init();
@@ -71,65 +67,66 @@ int main(void)
     make_record(hs_v3_a,3,27,300);
     memcpy(v3_copy,hs_v3_a,61);
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==300);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==330);
     assert(highscore_get(GAME_LEVEL_HARD,MAP_LABYRINTH,MODE_STANDARD)==380);
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==0);
-    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,50)==HIGHSCORE_SAVED);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==0);
+    assert(highscore_record_result(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL,50)==HIGHSCORE_SAVED);
     assert(memcmp(v3_copy,hs_v3_a,61)==0);
+    assert(hs_v4_a[5]==(unsigned char)300u);
+    assert(hs_v4_a[6]==(unsigned char)(300u>>8));
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==50);
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==300);
-    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,40)==HIGHSCORE_UNCHANGED);
-    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,60)==HIGHSCORE_SAVED);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==50);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==330);
+    assert(highscore_record_result(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL,40)==HIGHSCORE_UNCHANGED);
+    assert(highscore_record_result(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL,60)==HIGHSCORE_SAVED);
     hs_v4_b[77]^=1u;
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==50);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==50);
     hs_v4_a[78]=0;
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==0);
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==300);
-    for (i=0;i<18u;++i) {
-        GameMode mode=(GameMode)(i/9u);
-        GameLevel level=(GameLevel)((i%9u)/3u);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==0);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==330);
+    for (i=0;i<12u;++i) {
+        GameMode mode=(GameMode)(i/6u);
+        GameLevel level=(GameLevel)(1u+(i%6u)/3u);
         MapId map=(MapId)(i%3u);
         unsigned int value=(unsigned int)(600u+10u*i);
         assert(highscore_record_result(level,map,mode,value)==HIGHSCORE_SAVED);
     }
     highscore_init();
-    for (i=0;i<18u;++i)
-        assert(highscore_get((GameLevel)((i%9u)/3u),(MapId)(i%3u),
-                             (GameMode)(i/9u))==(unsigned int)(600u+10u*i));
-    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,1110)==HIGHSCORE_SAVED);
+    for (i=0;i<12u;++i)
+        assert(highscore_get((GameLevel)(1u+(i%6u)/3u),(MapId)(i%3u),
+                             (GameMode)(i/6u))==(unsigned int)(600u+10u*i));
+    assert(highscore_record_result(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL,1110)==HIGHSCORE_SAVED);
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==1110u);
-    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL,5460)==HIGHSCORE_SAVE_FAILED);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==1110u);
+    assert(highscore_record_result(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL,5460)==HIGHSCORE_SAVE_FAILED);
     clear_eeprom();
     make_record(hs_v4_a,4,36,100);
     make_record(hs_v4_b,4,36,200);
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==370u);
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,(GameMode)2)==0u);
-    assert(!game_mode_select((GameMode)2));
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==400u);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,(GameMode)2)==0u);
     hs_v4_a[23]=(unsigned char)6000u;
     hs_v4_a[24]=(unsigned char)(6000u>>8);
     hs_v4_a[77]=crc(hs_v4_a,77);
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_SURVIVAL)==370u);
-    assert(highscore_record_result(GAME_LEVEL_EASY,MAP_CLASSIC,
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_SURVIVAL)==400u);
+    assert(highscore_record_result(GAME_LEVEL_NORMAL,MAP_CLASSIC,
                                    (GameMode)2,100)==HIGHSCORE_SAVE_FAILED);
     hs_v4_a[3]=0xff; hs_v4_a[4]=0xff;
     hs_v4_a[77]=crc(hs_v4_a,77);
     hs_v4_b[3]=0; hs_v4_b[4]=0;
     hs_v4_b[77]=crc(hs_v4_b,77);
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==200u);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==230u);
     hs_v4_b[78]=0;
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==100u);
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==130u);
     hs_v4_b[78]=0xa5;
     hs_v4_a[77]^=1u;
     highscore_init();
-    assert(highscore_get(GAME_LEVEL_EASY,MAP_CLASSIC,MODE_STANDARD)==200u);
-    puts("PASS: mode menu, EEPROM v1/v2/v3 to v4, CRC, 18 scores");
+    assert(highscore_get(GAME_LEVEL_NORMAL,MAP_CLASSIC,MODE_STANDARD)==230u);
+    puts("PASS: EEPROM v1/v2/v3 to v4, CRC, legacy score groups, 6 active obstacle scores");
     return 0;
 }

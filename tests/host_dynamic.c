@@ -8,7 +8,7 @@ static void check_bars_all_maps(void)
     unsigned char map,level,seed,attempt,i,j,x,y,count;
     SnakePoint start;
     for (map=0;map<MAP_COUNT;++map)
-        for (level=0;level<3u;++level)
+        for (level=GAME_LEVEL_NORMAL;level<=GAME_LEVEL_HARD;++level)
             for (seed=1;seed<=32u;++seed) {
                 assert(game_map_select((MapId)map));
                 snake_set_level((GameLevel)level);
@@ -44,22 +44,26 @@ int main(void)
 {
     unsigned char x,y,i;
     signed int next_x,next_y;
-    assert(game_mode_select(MODE_SURVIVAL));
     assert(game_map_select(MAP_CLASSIC));
     snake_init();
-    /* Seven wall cells leave one bridge at (4,4). Closing it disconnects
-       the left and right halves even though it is outside head safety zone. */
+    /* One wall leaves a bridge at (4,4), plus a path through the edges. */
     for (y=0;y<GRID_ROWS;++y)
         if (y!=4u) blocked_rows[y]=(unsigned int)(1u<<4);
     obstacle_count=7u;
     segments[0].x=10u; segments[0].y=4u;
     food.x=8; food.y=4;
+    segments[1].x=8u; segments[1].y=3u;
+    segments[2].x=9u; segments[2].y=3u;
+    assert(dynamic_obstacle_candidate_valid(4,4));
+    /* A second wall blocks the alternative path through the wrapped edge. */
+    for (y=0;y<GRID_ROWS;++y) blocked_rows[y]|=(unsigned int)(1u<<12);
     assert(!dynamic_obstacle_candidate_valid(4,4));
+    for (y=0;y<GRID_ROWS;++y) blocked_rows[y]&=(unsigned int)~(1u<<12);
     snake_set_level(GAME_LEVEL_NORMAL);
     segments[1].x=8u; segments[1].y=3u;
     segments[2].x=9u; segments[2].y=3u;
     assert(dynamic_obstacle_candidate_valid(4,4));
-    snake_set_level(GAME_LEVEL_EASY);
+    snake_set_level(GAME_LEVEL_NORMAL);
     assert(dynamic_obstacle_candidate_valid(0,0));
     assert(!dynamic_obstacle_candidate_valid(4,3));
     assert(!dynamic_obstacle_candidate_valid(8,4));
@@ -76,7 +80,7 @@ int main(void)
     obstacle_count=1u;
     assert(snake_step()==1 && snake_state()==SNAKE_GAME_OVER);
     assert(segments[0].x==13u && segments[0].y==4u);
-    snake_set_level(GAME_LEVEL_EASY);
+    snake_set_level(GAME_LEVEL_NORMAL);
     snake_init();
     snake_set_level(GAME_LEVEL_HARD);
     blocked_rows[7]=(unsigned int)(1u<<13);
@@ -87,7 +91,7 @@ int main(void)
     assert(segments[0].x==5u && direction==DIR_LEFT);
     assert(obstacle_count==1u && elapsed_ms==12345UL);
     assert(!dynamic_obstacle_candidate_valid(segments[0].x,segments[0].y));
-    snake_set_level(GAME_LEVEL_EASY);
+    snake_set_level(GAME_LEVEL_NORMAL);
     snake_init();
     blocked_rows[7]=(unsigned int)(1u<<13);
     obstacle_count=1u;
@@ -108,6 +112,6 @@ int main(void)
     assert(snake_state()==SNAKE_WIN);
     assert(snake_length()==111u && snake_get_score()==1080u);
     check_bars_all_maps();
-    puts("PASS: 3-cell bars across 3 maps, 3 levels, 32 seeds; connectivity and collisions");
+    puts("PASS: 3-cell bars across 3 maps, 2 levels, 32 seeds; connectivity and collisions");
     return 0;
 }

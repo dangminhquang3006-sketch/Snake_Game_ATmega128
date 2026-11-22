@@ -4,7 +4,6 @@
 
 #define KEY_RELEASED 0
 #define KEY_MULTIPLE 10
-#define KEY_DEBOUNCE_MS 20UL
 
 static unsigned char candidate=KEY_RELEASED;
 static unsigned char stable=KEY_RELEASED;

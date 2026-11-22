@@ -70,16 +70,28 @@
 /* Direct common-anode default: digit high, segment low. Verify in Proteus. */
 #define LED7_DIGIT_ON_LEVEL 1
 #define LED7_SEGMENT_ON_LEVEL 0
-#define LED7_SCAN_MS 2UL
 
 #define GRID_COLS 14
 #define GRID_ROWS 8
 #define CELL_SIZE 6
 #define GAME_MAX_SCORE ((GRID_COLS*GRID_ROWS-3u)*10u)
-/* Movement periods are selected by game_get_move_period(). */
-/* dieu chinh toc do chay cua con ran */
-#define GAME_EASY_MOVE_MS 500u
+/* Timing configuration. All *_MS values are in milliseconds. */
+/* Toc do ran: thoi gian di chuyen mot o, theo Level. */
 #define GAME_NORMAL_MOVE_MS 300u
 #define GAME_HARD_MOVE_MS 250u
+
+/* Both levels: running time between obstacle attempts; pause stops it. */
+#define DYNAMIC_OBSTACLE_INTERVAL_MS 10000UL
+
+/* Peripheral service and diagnostic screen periods. */
+#define KEY_DEBOUNCE_MS 20UL
+#define LED7_SCAN_MS 2UL
+#define PERIPHERAL_TEST_CHANGE_MS 2000UL
+
+/* Fixed Timer1 hardware contract: 1 ms tick, CTC with clock/64.
+   CPU clock is supplied by the CodeVisionAVR project. These must match
+   timer_get_ms() units and the CS11/CS10 register bits in timer.c. */
+#define TIMER1_TICKS_PER_SECOND 1000UL
+#define TIMER1_CLOCK_PRESCALER 64UL
 
 #endif
